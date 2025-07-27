@@ -7,7 +7,6 @@ export const Movies = () => {
   useEffect(() => {
     const getMovies = async () => {
       const data = await fetchMoviesTrending();
-      console.log("Data", data);
       if (data) {
         setMovies(data.results);
       }
@@ -15,7 +14,6 @@ export const Movies = () => {
     getMovies();
   }, []);
 
-  console.log(movies);
   return (
     <>
       <h2>Movies page</h2>
