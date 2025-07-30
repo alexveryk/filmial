@@ -24,9 +24,9 @@ export const Header = () => {
     <header className="bg-gray-800 text-white ">
       {console.log(istoggleMobileMenu)}
       <Container>
-        <div className="">
+        <div className="flex items-center gap-12 py-2 ">
           <h1 className="text-xl font-semibold ">Filmial</h1>
-          <nav className="hidden md:flex gap-[12px] text-base ">
+          <nav className="hidden md:flex gap-[12px] text-base py-2 ">
             <NavLink className={isActiveLink} to="/">
               Головна
             </NavLink>
