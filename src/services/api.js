@@ -14,3 +14,13 @@ export const fetchMoviesTrending = async () => {
     console.log(error.message);
   }
 };
+
+
+export const fetchMovieDetails = async(movie_id) => {
+  try {
+    const responce = await axios(`movie/${movie_id}`)
+    return responce.data
+  } catch (error) {
+    console.log(error.message)
+  }
+}

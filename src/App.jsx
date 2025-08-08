@@ -3,6 +3,7 @@ import { Layout } from "./layouts/MainLayout";
 import { Home } from "./components/page/Home/Home";
 import { Movies } from "./components/page/Movies/Movies";
 import { Serials } from "./components/page/Serials/Serials";
+import { MediaDetails } from "./components/MediaDetails/MediaDetails";
 
 export const App = () => {
   return (
@@ -12,6 +13,7 @@ export const App = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/movies" element={<Movies />} />
+            <Route path="/movies/:movieId" element={<MediaDetails/>} />
             <Route path="/serials" element={<Serials />} />
           </Routes>
         </section>
