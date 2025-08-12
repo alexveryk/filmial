@@ -15,12 +15,20 @@ export const fetchMoviesTrending = async () => {
   }
 };
 
-
-export const fetchMovieDetails = async(movie_id) => {
+export const fetchMovieDetails = async (movie_id) => {
   try {
-    const responce = await axios(`movie/${movie_id}`)
-    return responce.data
+    const responce = await axios(`movie/${movie_id}?language=uk-UK`);
+    return responce.data;
   } catch (error) {
-    console.log(error.message)
+    console.log(error.message);
   }
-}
+};
+
+export const fetchById = async (external_id) => {
+  try {
+    const responce = await axios(`find/${external_id}`);
+    return responce;
+  } catch (error) {
+    console.log(error.message);
+  }
+};
