@@ -32,3 +32,14 @@ export const fetchById = async (external_id) => {
     console.log(error.message);
   }
 };
+
+// TV SERIES
+
+export const fetchPopularSeries = async () => {
+  try {
+    const responce = await axios("/tv/popular");
+    return responce.data;
+  } catch (error) {
+    console.log(error.message);
+  }
+};
