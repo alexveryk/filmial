@@ -43,8 +43,9 @@ export const Header = () => {
             {!istoggleMobileMenu && <AlignJustify size={32} />}
           </div>
           {istoggleMobileMenu && (
-            <Container>
-              <h2 className="fixed top-4 left-8  z-51 text-xl font-semibold p-1 border-2 border-white rounded-sm">
+            // <Container>
+            <>
+              <h2 className="fixed top-4 left-8  z-50 text-xl font-semibold p-1 border-2 text-white border-white rounded-sm">
                 Filmial
               </h2>
               <div className="fixed top-0 left-0 w-screen h-screen bg-gray-800  z-50 flex  flex-col text-2xl p-4 gap-4">
@@ -53,24 +54,25 @@ export const Header = () => {
                 </div>
                 <NavLink
                   className={isMobileActiveLink}
-                  onClick={istoggleMobileMenu}
+                  onClick={toggleMobileMenu}
                   to="/">
                   Головна
                 </NavLink>
                 <NavLink
                   className={isMobileActiveLink}
-                  onClick={istoggleMobileMenu}
+                  onClick={toggleMobileMenu}
                   to="/movies">
                   Фільми
                 </NavLink>
                 <NavLink
                   className={isMobileActiveLink}
-                  onClick={istoggleMobileMenu}
+                  onClick={toggleMobileMenu}
                   to="/serials">
                   Серіали
                 </NavLink>
               </div>
-            </Container>
+            </>
+            // </Container>
           )}
         </div>
       </Container>
