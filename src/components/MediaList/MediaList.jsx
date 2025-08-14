@@ -6,7 +6,9 @@ export const MediaList = ({ mediaItems }) => {
     <ul className="flex flex-wrap p-4 gap-2.5">
       {console.log("mediaItems ====>>>>>>>>", mediaItems)}
       {mediaItems.map((mediaItem) => (
-        <li key={mediaItem.id} className="w-[calc((100%/5)-8px)] gap-2px">
+        <li
+          key={mediaItem.id}
+          className="xl:w-[calc((100%/5)-8px)] lg:w-[calc((100%/4)-8px)]  md:w-[calc((100%/2)-6px)]  sm:w-full gap-2px  ">
           <Link to={`${mediaItem.id}`}>
             <MediaCard items={mediaItem} />
           </Link>

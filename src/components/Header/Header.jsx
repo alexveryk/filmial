@@ -25,7 +25,7 @@ export const Header = () => {
       {console.log(istoggleMobileMenu)}
       <Container>
         <div className="flex items-center gap-12 py-2 ">
-          <h1 className="text-xl font-semibold ">Filmial</h1>
+          <h1 className="text-xl font-semibold hidden md:block">Filmial</h1>
           <nav className="hidden md:flex gap-[12px] text-base py-2 ">
             <NavLink className={isActiveLink} to="/">
               Головна
@@ -45,13 +45,11 @@ export const Header = () => {
           {istoggleMobileMenu && (
             // <Container>
             <>
-              <h2 className="fixed top-4 left-8  z-50 text-xl font-semibold p-1 border-2 text-white border-white rounded-sm">
-                Filmial
-              </h2>
               <div className="fixed top-0 left-0 w-screen h-screen bg-gray-800  z-50 flex  flex-col text-2xl p-4 gap-4">
                 <div className="flex justify-end" onClick={toggleMobileMenu}>
                   <SquareX size={32} />
                 </div>
+
                 <NavLink
                   className={isMobileActiveLink}
                   onClick={toggleMobileMenu}
@@ -72,6 +70,7 @@ export const Header = () => {
                 </NavLink>
               </div>
             </>
+
             // </Container>
           )}
         </div>
