@@ -3,16 +3,19 @@ import { MediaList } from "../../MediaList/MediaList";
 import { fetchPopularSeries } from "../../../services/api";
 import { Button } from "../../Button/Button";
 import { incrementPage } from "../../../services/incrementPage";
+import { Spinner } from "react-bootstrap";
 
 export const Serials = () => {
   const [TvSeries, setTvSeries] = useState([]);
   const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const getTvSeris = async () => {
       const data = await fetchPopularSeries(page);
       if (data) {
         setTvSeries((prev) => [...prev, ...data.results]);
+        setIsLoading(true);
       }
     };
 
@@ -22,12 +25,16 @@ export const Serials = () => {
   return (
     <>
       <h2 className="hidden">TV Serias Page</h2>
-      <MediaList mediaItems={TvSeries} />
+      {isLoading ? <MediaList mediaItems={TvSeries} /> :<div className="flex justify-center mt-4">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Завантаження...</span>
+        </Spinner>
+    </div>}
       <div className="flex justify-center mb-4">
-        <Button
+        {isLoading && <Button
           text={"Завантажити ще "}
           onClick={() => incrementPage(setPage)}
-        />
+        />}
       </div>
     </>
   );
