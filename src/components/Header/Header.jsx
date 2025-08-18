@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Container } from "../Container/Container";
 import { NavLink } from "react-router-dom";
 import { AlignJustify, SquareX } from "lucide-react";
+import { SearchBar } from "../SearchBar/SearchBar";
 
 export const Header = () => {
   const [istoggleMobileMenu, setIsToggleMobileMenu] = useState(false);
@@ -22,7 +23,6 @@ export const Header = () => {
 
   return (
     <header className="bg-gray-800 text-white ">
-      {console.log(istoggleMobileMenu)}
       <Container>
         <div className="flex items-center gap-12 py-2 ">
           <h1 className="text-xl font-semibold hidden md:block">Filmial</h1>
@@ -37,6 +37,7 @@ export const Header = () => {
               Серіали
             </NavLink>
           </nav>
+          <SearchBar />
 
           {/* Mobile menu */}
           <div className="md:hidden" onClick={toggleMobileMenu}>

@@ -3,7 +3,7 @@ import { MediaCard } from "../MediaCard/MediaCard";
 
 export const MediaList = ({ mediaItems }) => {
   return (
-    <ul className="flex flex-wrap p-4 gap-2.5">
+    <ul className="flex flex-wrap py-4 gap-2.5">
       {console.log("mediaItems ====>>>>>>>>", mediaItems)}
       {mediaItems.map((mediaItem) => (
         <li
