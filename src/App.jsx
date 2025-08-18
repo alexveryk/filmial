@@ -4,8 +4,6 @@ import { Home } from "./components/page/Home/Home";
 import { Movies } from "./components/page/Movies/Movies";
 import { Serials } from "./components/page/Serials/Serials";
 import { MediaDetails } from "./components/MediaDetails/MediaDetails";
-// import 'rsuite/dist/rsuite.min.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const App = () => {
   return (
