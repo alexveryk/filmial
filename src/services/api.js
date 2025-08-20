@@ -5,6 +5,8 @@ const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 axios.defaults.baseURL = "https://api.themoviedb.org/3/";
 axios.defaults.headers.common["Authorization"] = `Bearer ${API_KEY}`;
 
+// Movie
+
 export const fetchMoviesTrending = async (page) => {
   try {
     const response = await axios(
@@ -19,8 +21,8 @@ export const fetchMoviesTrending = async (page) => {
 
 export const fetchMovieDetails = async (movie_id) => {
   try {
-    const responce = await axios(`movie/${movie_id}?language=uk-UK`);
-    return responce.data;
+    const response = await axios(`movie/${movie_id}?language=uk-UK`);
+    return response.data;
   } catch (error) {
     console.log(error.message);
   }
@@ -28,8 +30,20 @@ export const fetchMovieDetails = async (movie_id) => {
 
 export const fetchById = async (external_id) => {
   try {
-    const responce = await axios(`find/${external_id}`);
-    return responce;
+    const response = await axios(`find/${external_id}`);
+    return response;
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+export const searchMovie = async (query, page) => {
+  try {
+    const response = await axios(
+      `search/movie?query=${query}&language=uk-UA&page=${page}`
+    );
+    console.log(response);
+    return response.data;
   } catch (error) {
     console.log(error.message);
   }
@@ -39,8 +53,8 @@ export const fetchById = async (external_id) => {
 
 export const fetchPopularSeries = async (page) => {
   try {
-    const responce = await axios(`/tv/popular?page=${page}`);
-    return responce.data;
+    const response = await axios(`/tv/popular?page=${page}`);
+    return response.data;
   } catch (error) {
     console.log(error.message);
   }

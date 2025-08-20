@@ -25,6 +25,7 @@ export const Movies = () => {
   return (
     <>
       <h2 className="hidden">Movies page</h2>
+      {console.log(movies)}
       {isLoading ? <MediaList mediaItems={movies} /> : <Spinner />}
       <div className="flex justify-center mb-4">
         {isLoading && (

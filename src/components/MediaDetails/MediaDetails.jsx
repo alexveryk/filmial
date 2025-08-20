@@ -5,18 +5,18 @@ import { useEffect, useState } from "react";
 export const MediaDetails = () => {
   const [MovieDetails, setMovieDetails] = useState([]);
 
-  const { movieId } = useParams();
+  const { id } = useParams();
 
   useEffect(() => {
     const getMovieDetails = async () => {
-      const data = await fetchMovieDetails(movieId);
+      const data = await fetchMovieDetails(id);
       if (data) {
         setMovieDetails(data);
       }
     };
 
     getMovieDetails();
-  }, [movieId]);
+  }, [id]);
 
   console.log(MovieDetails);
 
@@ -30,7 +30,6 @@ export const MediaDetails = () => {
 
   return (
     <div>
-      {console.log(MediaDetails.revenue)}
       <ul>
         <li>
           backdrop_path:{" "}

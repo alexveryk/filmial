@@ -1,14 +1,21 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 export const SearchBar = () => {
   const [search, setSearch] = useState("");
 
+  const navigate = useNavigate();
+
   const handleSubmit = (evt) => {
     evt.preventDefault();
-    const search = evt;
-    console.log(search);
-    setSearch(evt.target.value);
+
+    if (!search.trim()) return;
+
+    navigate(`/search?query=${encodeURIComponent(search)}`);
+
+    setSearch("");
   };
 
   return (
