@@ -22,7 +22,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="bg-gray-800 text-white ">
+    <header className="bg-gray-800 text-white mb-4">
       <Container>
         <div className="flex items-center gap-12 py-2 ">
           <h1 className="text-xl font-semibold hidden md:block">Filmial</h1>

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { searchMovie } from "../../services/api";
 import { MediaList } from "../MediaList/MediaList";
 import { Button } from "../Button/Button";
+import { Spinner } from "../Spiner/Spiner";
 
 export const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -37,16 +38,21 @@ export const SearchResults = () => {
       <h1 className="mt-4 p-2 w-fit rounded-md bg-gray-800 text-white font-semibold">
         Результат пошуку: {query}
       </h1>
-      {console.log("Пошук ", result)}
-      <MediaList mediaItems={result} />
-      <div className="flex justify-center mb-4">
-        {page < totalPages && (
-          <Button
-            text={"Завантажити ще"}
-            onClick={() => setPage((prev) => prev + 1)}
-          />
-        )}
-      </div>
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <div>
+          <MediaList mediaItems={result} />
+          <div className="flex justify-center mb-4">
+            {page < totalPages && (
+              <Button
+                text={"Завантажити ще"}
+                onClick={() => setPage((prev) => prev + 1)}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
