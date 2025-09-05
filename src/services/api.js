@@ -53,7 +53,16 @@ export const searchMovie = async (query, page) => {
 
 export const fetchPopularSeries = async (page) => {
   try {
-    const response = await axios(`/tv/popular?page=${page}`);
+    const response = await axios(`/tv/popular?page=${page}?language=uk-UK`);
+    return response.data;
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+export const fetchTvSeriesDetails = async (series_id) => {
+  try {
+    const response = await axios(`tv/${series_id}?language=uk-UK`);
     return response.data;
   } catch (error) {
     console.log(error.message);
