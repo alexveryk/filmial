@@ -1,9 +1,4 @@
 export const MediaCard = ({ items }) => {
-  // const reliseDate = (date) => {
-  //   const [year, month, day] = date.split("-");
-  //   return `${day}.${month}.${year}`;
-  // };
-
   return (
     <div className="w-full rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform duration-300">
       <img

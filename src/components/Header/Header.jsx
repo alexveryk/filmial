@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Container } from "../Container/Container";
 import { NavLink } from "react-router-dom";
 import { AlignJustify, SquareX } from "lucide-react";
