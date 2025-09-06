@@ -49,6 +49,15 @@ export const searchMovie = async (query, page) => {
   }
 };
 
+export const fetchMoviesPopularity = async () => {
+  try {
+    const response = await axios(`movie/popular?language=uk-UA`);
+    return response.data;
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
 // TV SERIES
 
 export const fetchPopularSeries = async (page) => {

@@ -19,7 +19,9 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.3",
+    "react-slick": "^0.31.0",
     "rsuite": "^5.83.3",
+    "slick-carousel": "^1.8.1",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
