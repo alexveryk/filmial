@@ -37,7 +37,7 @@ export const Header = () => {
               Серіали
             </NavLink>
           </nav>
-          <SearchBar />
+          <SearchBar className="hidden md:flex" />
 
           {/* Mobile menu */}
           <div className="md:hidden" onClick={toggleMobileMenu}>
@@ -69,6 +69,10 @@ export const Header = () => {
                   to="/serials">
                   Серіали
                 </NavLink>
+                <SearchBar
+                  className="block md:hidden ml-8 mt-4"
+                  onAction={toggleMobileMenu}
+                />
               </div>
             </>
 

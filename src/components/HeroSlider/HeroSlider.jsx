@@ -5,7 +5,7 @@ import "slick-carousel/slick/slick-theme.css";
 
 export const HeroSlider = ({ popularMovies }) => {
   var settings = {
-    dots: true,
+    dots: false,
     infinite: true,
     speed: 500,
     slidesToShow: 1,
@@ -26,7 +26,7 @@ export const HeroSlider = ({ popularMovies }) => {
               alt={popularMovie.title}
             />
             <h3
-              className="font-mono text-2xl p-2 absolute bottom-0 left-0 bg-amber-50/40  w-full rounded-xl
+              className="font-mono text-2xl p-2 absolute bottom-0 left-0 bg-gray-800/50  w-full rounded-xl text-amber-50
             ">
               {popularMovie.title}
             </h3>

@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
-export const SearchBar = () => {
+export const SearchBar = ({ className = "", onAction }) => {
   const [search, setSearch] = useState("");
 
   const navigate = useNavigate();
@@ -16,12 +16,15 @@ export const SearchBar = () => {
     navigate(`/search?query=${encodeURIComponent(search)}`);
 
     setSearch("");
+    if (onAction) {
+      onAction();
+    }
   };
 
   return (
     <form
       action=""
-      className="relative text-black w-3xs h-8 hidden md:flex"
+      className={`relative text-black w-3xs h-8 ${className}`}
       onSubmit={handleSubmit}>
       <input
         className="absolute right-4 top-1/2 transform -translate-y-1/2 w-full max-w-xs pr-8 h-8 pl-2 bg-white  rounded-sm"
