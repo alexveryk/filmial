@@ -44,7 +44,7 @@ export const Serials = () => {
       <div className="flex justify-center mb-4">
         {!isLoading && (
           <Button
-            text={"??????????? ?? "}
+            text={"Завантажити ще "}
             onClick={() => incrementPage(setPage)}
           />
         )}
