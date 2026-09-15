@@ -55,7 +55,7 @@ export const SearchResults = () => {
   return (
     <div>
       <h1 className="mt-4 p-2 w-fit rounded-md bg-gray-800 text-white font-semibold">
-        ????????? ??????: {query}
+        Результат пошуку: {query}
       </h1>
       {isLoading ? (
         <Spinner />
@@ -65,7 +65,7 @@ export const SearchResults = () => {
           <div className="flex justify-center mb-4">
             {page < totalPages && (
               <Button
-                text={"??????????? ??"}
+                text={"Завантажити ще"}
                 onClick={() => setPage((prev) => prev + 1)}
               />
             )}

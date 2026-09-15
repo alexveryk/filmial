@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useMediaState } from "../../context/MediaStateContext";
 
 const defaultLists = [
   { id: 1, name: "Комедії" },
@@ -13,28 +14,33 @@ export const MediaCard = ({
   onAddToList,
   onToggleWatched,
 }) => {
-  const [isWatched, setIsWatched] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
+  const { isWatched, getSelectedListIds, toggleWatched, toggleList } =
+    useMediaState();
+  const watched = isWatched(items.id);
+  const selectedListIds = getSelectedListIds(items.id);
 
   const handleToggleWatched = useCallback(() => {
-    const nextValue = !isWatched;
-    setIsWatched(nextValue);
+    const nextValue = !watched;
+    toggleWatched(items.id);
 
     if (onToggleWatched) {
       onToggleWatched(items.id, nextValue);
     }
-  }, [isWatched, items.id, onToggleWatched]);
+  }, [items.id, onToggleWatched, toggleWatched, watched]);
 
   const handleAddToList = useCallback(
     (listId) => {
+      toggleList(items.id, listId);
+
       if (onAddToList) {
         onAddToList(items.id, listId);
       }
 
       setIsOpen(false);
     },
-    [items.id, onAddToList]
+    [items.id, onAddToList, toggleList]
   );
 
   useEffect(() => {
@@ -52,10 +58,14 @@ export const MediaCard = ({
   }, []);
 
   return (
-    <div className="group relative w-full overflow-hidden rounded-xl bg-gray-800 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div
+      className={`group relative w-full overflow-visible rounded-xl bg-gray-800 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+        isOpen ? "z-50" : "z-0"
+      }`}
+    >
       <div className="relative">
         <img
-          className="h-[420px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          className="h-[420px] w-full rounded-t-xl object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           src={`https://image.tmdb.org/t/p/w500/${items.poster_path}`}
           alt={items.title || items.name || "Movie Poster"}
         />
@@ -69,12 +79,12 @@ export const MediaCard = ({
                 handleToggleWatched();
               }}
               className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-200 ${
-                isWatched
+                watched
                   ? "bg-green-500 text-white hover:bg-green-600"
                   : "bg-gray-200 text-gray-800 hover:bg-gray-300"
               }`}
             >
-              {isWatched ? "✓ Дивився" : "○ Дивився"}
+              {watched ? "✓ Дивився" : "○ Дивився"}
             </button>
 
             <div ref={menuRef} className="relative">
@@ -91,7 +101,7 @@ export const MediaCard = ({
 
               {isOpen && (
                 <div
-                  className="absolute right-0 top-[calc(100%+8px)] z-20 w-56 rounded-xl border border-gray-700 bg-gray-900 p-2 shadow-2xl"
+                  className="absolute right-0 top-[calc(100%+8px)] z-[9999] w-56 rounded-xl border border-gray-700 bg-gray-900 p-2 shadow-2xl"
                   style={{ animation: "fadeIn 0.2s ease-out" }}
                 >
                   {lists.length > 0 ? (
@@ -103,9 +113,14 @@ export const MediaCard = ({
                           event.preventDefault();
                           handleAddToList(list.id);
                         }}
-                        className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-gray-200 transition-colors duration-150 hover:bg-gray-800 hover:text-white"
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-200 transition-colors duration-150 hover:bg-gray-800 hover:text-white"
                       >
-                        {list.name}
+                        <span>{list.name}</span>
+                        {selectedListIds.includes(list.id) && (
+                          <span className="ml-3 font-bold text-green-400" aria-label="Додано до списку">
+                            ✓
+                          </span>
+                        )}
                       </button>
                     ))
                   ) : (

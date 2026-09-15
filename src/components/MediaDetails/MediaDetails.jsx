@@ -1,6 +1,7 @@
 import { useLocation, useParams } from "react-router-dom";
 import { fetchMovieDetails, fetchTvSeriesDetails } from "../../services/api";
 import { useEffect, useRef, useState } from "react";
+import { useMediaState } from "../../context/MediaStateContext";
 
 const mediaLists = [
   { id: 1, name: "Комедії" },
@@ -11,13 +12,16 @@ const mediaLists = [
 
 export const MediaDetails = () => {
   const [mediaDetails, setMediaDetails] = useState({});
-  const [isWatched, setIsWatched] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
   const listMenuRef = useRef(null);
 
   const { id } = useParams();
   const location = useLocation();
   const pathname = location.pathname;
+  const { isWatched, getSelectedListIds, toggleWatched, toggleList } =
+    useMediaState();
+  const watched = isWatched(id);
+  const selectedListIds = getSelectedListIds(id);
 
   const isMovieRoute = pathname.includes("/movies/");
   const isSeriesRoute = pathname.includes("/serials/");
@@ -57,21 +61,22 @@ export const MediaDetails = () => {
 
   const valuesToString = (values) => {
     if (!values || values.length === 0) {
-      return "????????, ?? ? ???????????? ????? ????????";
+      return "Порожньо, як у холодильнику після зарплати";
     }
 
     return values.map((value) => value.name).join(", ");
   };
 
-  const title = mediaDetails.title || mediaDetails.name || "??? ?????";
+  const title = mediaDetails.title || mediaDetails.name || "Без назви";
   const releaseDate =
-    mediaDetails.release_date || mediaDetails.first_air_date || "????????";
+    mediaDetails.release_date || mediaDetails.first_air_date || "Невідомо";
   const voteAverage =
     typeof mediaDetails.vote_average === "number"
       ? mediaDetails.vote_average.toFixed(1)
       : "N/A";
 
   const handleAddToList = (listId) => {
+    toggleList(id, listId);
     console.log("Додано до списку:", { mediaId: id, listId });
     setIsListOpen(false);
   };
@@ -91,13 +96,13 @@ export const MediaDetails = () => {
   }, []);
 
   if (!mediaDetails || Object.keys(mediaDetails).length === 0) {
-    return <div className="text-center py-8">?????????? ??????????.</div>;
+    return <div className="text-center py-8">Інформація недоступна.</div>;
   }
 
   return (
     <div className="max-w-6xl mx-auto">
       <div
-        className="relative w-full rounded-2xl overflow-hidden shadow-lg"
+        className="relative z-30 w-full rounded-2xl overflow-visible shadow-lg"
         style={{
           backgroundImage: `url(https://image.tmdb.org/t/p/original/${mediaDetails.backdrop_path})`,
           backgroundSize: "cover",
@@ -121,7 +126,7 @@ export const MediaDetails = () => {
                 {mediaDetails.tagline || ""}
               </p>
               <p className="text-gray-200 leading-relaxed mb-4">
-                {mediaDetails.overview || "???? ?????????"}
+                {mediaDetails.overview || "Опис відсутній"}
               </p>
             </div>
             <div className="flex items-center gap-4 mt-4">
@@ -135,22 +140,22 @@ export const MediaDetails = () => {
               </span>
 
               <span className="px-3 py-2 bg-gray-700 text-white rounded-full text-sm font-semibold">
-                ?? {releaseDate}
+                📅 {releaseDate}
               </span>
             </div>
 
             <div className="relative mt-5 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsWatched((previous) => !previous)}
-                aria-pressed={isWatched}
+                onClick={() => toggleWatched(id)}
+                aria-pressed={watched}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200 ${
-                  isWatched
+                  watched
                     ? "bg-green-500 text-white hover:bg-green-600"
                     : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                 }`}
               >
-                {isWatched ? "✓ Дивився" : "○ Дивився"}
+                {watched ? "✓ Дивився" : "○ Дивився"}
               </button>
 
               <div ref={listMenuRef} className="relative">
@@ -165,7 +170,7 @@ export const MediaDetails = () => {
 
                 {isListOpen && (
                   <div
-                    className="absolute left-0 top-[calc(100%+8px)] z-20 w-56 rounded-xl border border-gray-700 bg-gray-900 p-2 shadow-2xl"
+                    className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-56 rounded-xl border border-gray-700 bg-gray-900 p-2 shadow-2xl"
                     style={{ animation: "fadeIn 0.2s ease-out" }}
                   >
                     {mediaLists.map((list) => (
@@ -173,9 +178,14 @@ export const MediaDetails = () => {
                         key={list.id}
                         type="button"
                         onClick={() => handleAddToList(list.id)}
-                        className="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-200 transition-colors hover:bg-gray-800 hover:text-white"
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-200 transition-colors hover:bg-gray-800 hover:text-white"
                       >
-                        {list.name}
+                        <span>{list.name}</span>
+                        {selectedListIds.includes(list.id) && (
+                          <span className="ml-3 font-bold text-green-400" aria-label="Додано до списку">
+                            ✓
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -187,32 +197,32 @@ export const MediaDetails = () => {
       </div>
 
       <div className="mt-8 bg-gray-800 p-6 rounded-2xl shadow-md mb-4">
-        <h2 className="text-2xl font-semibold text-gray-300 mb-4">??????</h2>
+        <h2 className="text-2xl font-semibold text-gray-300 mb-4">Деталі</h2>
         <ul className="grid md:grid-cols-2 gap-y-3 gap-x-8 text-gray-300">
           <li>
-            <strong>???? ?????????:</strong> {mediaDetails.original_language}
+            <strong>Мова оригіналу:</strong> {mediaDetails.original_language}
           </li>
           <li>
-            <strong>?????:</strong> {valuesToString(mediaDetails.genres)}
+            <strong>Жанри:</strong> {valuesToString(mediaDetails.genres)}
           </li>
           <li>
-            <strong>??????:</strong>{" "}
+            <strong>Країна:</strong>{" "}
             {valuesToString(mediaDetails.production_countries)}
           </li>
           <li>
-            <strong>??????:</strong> ${mediaDetails.budget?.toLocaleString()}
+            <strong>Бюджет:</strong> ${mediaDetails.budget?.toLocaleString()}
           </li>
           <li>
-            <strong>?????:</strong> ${mediaDetails.revenue?.toLocaleString()}
+            <strong>Дохід:</strong> ${mediaDetails.revenue?.toLocaleString()}
           </li>
           <li>
-            <strong>??????:</strong> {mediaDetails.status}
+            <strong>Статус:</strong> {mediaDetails.status}
           </li>
           <li>
-            <strong>??????????:</strong> {mediaDetails.runtime || mediaDetails.episode_run_time?.[0] || "????????"} ??.
+            <strong>Тривалість:</strong> {mediaDetails.runtime || mediaDetails.episode_run_time?.[0] || "Невідомо"} хв.
           </li>
           <li>
-            <strong>?????????:</strong>{" "}
+            <strong>Виробники:</strong>{" "}
             {valuesToString(mediaDetails.production_companies)}
           </li>
         </ul>
