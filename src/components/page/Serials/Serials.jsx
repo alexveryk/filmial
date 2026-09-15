@@ -6,30 +6,45 @@ import { incrementPage } from "../../../services/incrementPage";
 import { Spinner } from "../../Spiner/Spiner";
 
 export const Serials = () => {
-  const [TvSeries, setTvSeries] = useState([]);
+  const [tvSeries, setTvSeries] = useState([]);
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getTvSeris = async () => {
-      const data = await fetchPopularSeries(page);
-      if (data) {
-        setTvSeries((prev) => [...prev, ...data.results]);
-        setIsLoading(true);
+    const getTvSeries = async () => {
+      setIsLoading(true);
+
+      try {
+        const data = await fetchPopularSeries(page);
+
+        if (data?.results) {
+          setTvSeries((prev) => {
+            const nextItems = page === 1 ? data.results : [...prev, ...data.results];
+            return nextItems.filter(
+              (item, index, array) =>
+                array.findIndex((candidate) => candidate.id === item.id) === index
+            );
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        setTvSeries([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    getTvSeris();
+    getTvSeries();
   }, [page]);
 
   return (
     <>
       <h2 className="hidden">TV Serias Page</h2>
-      {isLoading ? <MediaList mediaItems={TvSeries} /> : <Spinner />}
+      {isLoading ? <Spinner /> : <MediaList mediaItems={tvSeries} listType="serials" />}
       <div className="flex justify-center mb-4">
-        {isLoading && (
+        {!isLoading && (
           <Button
-            text={"Завантажити ще "}
+            text={"??????????? ?? "}
             onClick={() => incrementPage(setPage)}
           />
         )}

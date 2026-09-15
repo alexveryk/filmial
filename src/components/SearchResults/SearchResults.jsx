@@ -15,19 +15,38 @@ export const SearchResults = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    setResult([]);
+    setPage(1);
+    setTotalPages(1);
+  }, [query]);
+
+  useEffect(() => {
     if (!query) return;
 
     const fetchResult = async () => {
       setIsLoading(true);
-      const data = await searchMovie(query, page);
 
-      setResult((prev) =>
-        page === 1 ? data.results : [...prev, ...data.results]
-      );
+      try {
+        const data = await searchMovie(query, page);
 
-      setTotalPages(data.total_pages || 1);
+        if (!data?.results) {
+          setResult([]);
+          setTotalPages(1);
+          return;
+        }
 
-      setIsLoading(false);
+        setResult((prev) =>
+          page === 1 ? data.results : [...prev, ...data.results]
+        );
+
+        setTotalPages(data.total_pages || 1);
+      } catch (error) {
+        console.error(error);
+        setResult([]);
+        setTotalPages(1);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchResult();
@@ -36,7 +55,7 @@ export const SearchResults = () => {
   return (
     <div>
       <h1 className="mt-4 p-2 w-fit rounded-md bg-gray-800 text-white font-semibold">
-        Результат пошуку: {query}
+        ????????? ??????: {query}
       </h1>
       {isLoading ? (
         <Spinner />
@@ -46,7 +65,7 @@ export const SearchResults = () => {
           <div className="flex justify-center mb-4">
             {page < totalPages && (
               <Button
-                text={"Завантажити ще"}
+                text={"??????????? ??"}
                 onClick={() => setPage((prev) => prev + 1)}
               />
             )}
