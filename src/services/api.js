@@ -2,78 +2,94 @@ import axios from "axios";
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
-axios.defaults.baseURL = "https://api.themoviedb.org/3/";
-axios.defaults.headers.common["Authorization"] = `Bearer ${API_KEY}`;
+const api = axios.create({
+  baseURL: "https://api.themoviedb.org/3/",
+  headers: API_KEY ? { Authorization: "Bearer " + API_KEY } : {},
+  params: {
+    language: "uk-UA",
+  },
+});
+
+const handleApiError = (error) => {
+  console.error("TMDB API error:", error.response?.data || error.message);
+  throw error;
+};
 
 // Movie
 
-export const fetchMoviesTrending = async (page) => {
+export const fetchMoviesTrending = async (page = 1) => {
   try {
-    const response = await axios(
-      `trending/movie/day?language=uk-UK&page=${page}`
-    );
-    console.log("Data in API", response);
+    const response = await api.get("trending/movie/day", {
+      params: { page },
+    });
+
     return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
 
-export const fetchMovieDetails = async (movie_id) => {
+export const fetchMovieDetails = async (movieId) => {
   try {
-    const response = await axios(`movie/${movie_id}?language=uk-UK`);
+    const response = await api.get(`movie/${movieId}`);
     return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
 
-export const fetchById = async (external_id) => {
+export const fetchById = async (externalId) => {
   try {
-    const response = await axios(`find/${external_id}`);
-    return response;
+    const response = await api.get(`find/${externalId}`);
+    return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
 
-export const searchMovie = async (query, page) => {
+export const searchMovie = async (query, page = 1) => {
   try {
-    const response = await axios(
-      `search/movie?query=${query}&language=uk-UA&page=${page}`
-    );
-    console.log(response);
+    const response = await api.get("search/movie", {
+      params: {
+        query: query.trim(),
+        page,
+      },
+    });
+
     return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
 
 export const fetchMoviesPopularity = async () => {
   try {
-    const response = await axios(`movie/popular?language=uk-UA`);
+    const response = await api.get("movie/popular");
     return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
 
 // TV SERIES
 
-export const fetchPopularSeries = async (page) => {
+export const fetchPopularSeries = async (page = 1) => {
   try {
-    const response = await axios(`/tv/popular?page=${page}?language=uk-UK`);
+    const response = await api.get("tv/popular", {
+      params: { page },
+    });
+
     return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
 
-export const fetchTvSeriesDetails = async (series_id) => {
+export const fetchTvSeriesDetails = async (seriesId) => {
   try {
-    const response = await axios(`tv/${series_id}?language=uk-UK`);
+    const response = await api.get(`tv/${seriesId}`);
     return response.data;
   } catch (error) {
-    console.log(error.message);
+    return handleApiError(error);
   }
 };
