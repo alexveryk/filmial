@@ -1,84 +1,89 @@
 import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
+import { Clapperboard, Menu, X } from "lucide-react";
 import { Container } from "../Container/Container";
-import { NavLink } from "react-router-dom";
-import { AlignJustify, SquareX } from "lucide-react";
 import { SearchBar } from "../SearchBar/SearchBar";
 
+const links = [
+  { to: "/", label: "Головна", end: true },
+  { to: "/movies", label: "Фільми" },
+  { to: "/serials", label: "Серіали" },
+];
+
+const navLinkClass = ({ isActive }) =>
+  `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+    isActive
+      ? "text-blue-300"
+      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+  }`;
+
 export const Header = () => {
-  const [istoggleMobileMenu, setIsToggleMobileMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const isActiveLink = ({ isActive }) =>
-    isActive
-      ? " text-blue-300 font-semibold underline underline-offset-8 decoration-blue-300"
-      : " text-white font-semibold  hover:text-blue-300 hover:underline hover:underline-offset-8 hover:decoration-blue-300  transition";
-
-  const isMobileActiveLink = ({ isActive }) =>
-    isActive
-      ? "p-4 bg-white text-gray-800 font-semibold"
-      : "p-4 hover:bg-white hover:text-gray-800 font-semibold ";
-
-  const toggleMobileMenu = () => {
-    setIsToggleMobileMenu((prev) => !prev);
-  };
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
-    <header className="bg-gray-800 text-white mb-4">
+    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/95 text-white backdrop-blur-xl">
       <Container>
-        <div className="flex items-center gap-12 py-2 ">
-          <h1 className="text-xl font-semibold hidden md:block">Filmial</h1>
-          <nav className="hidden md:flex gap-[12px] text-base py-2 ">
-            <NavLink className={isActiveLink} to="/">
-              Головна
-            </NavLink>
-            <NavLink className={isActiveLink} to="/movies">
-              Фільми
-            </NavLink>
-            <NavLink className={isActiveLink} to="/serials">
-              Серіали
-            </NavLink>
+        <div className="flex min-h-[72px] items-center gap-5">
+          <Link
+            to="/"
+            className="flex shrink-0 items-center gap-2 text-xl font-bold tracking-tight text-white"
+            aria-label="Filmial — на головну"
+          >
+            <Clapperboard className="text-blue-400" size={23} />
+            <span>
+              Film<span className="text-blue-400">ial</span>
+            </span>
+          </Link>
+
+          <nav aria-label="Головна навігація" className="hidden items-center gap-1 md:flex">
+            {links.map(({ to, label, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={navLinkClass}
+              >
+                {label}
+              </NavLink>
+            ))}
           </nav>
-          <SearchBar className="hidden md:flex" />
 
-          {/* Mobile menu */}
-          <div className="md:hidden" onClick={toggleMobileMenu}>
-            {!istoggleMobileMenu && <AlignJustify size={32} />}
-          </div>
-          {istoggleMobileMenu && (
-            // <Container>
-            <>
-              <div className="fixed top-0 left-0 w-screen h-screen bg-gray-800  z-50 flex  flex-col text-2xl p-4 gap-4">
-                <div className="flex justify-end" onClick={toggleMobileMenu}>
-                  <SquareX size={32} />
-                </div>
+          <SearchBar className="ml-auto hidden md:block" />
 
-                <NavLink
-                  className={isMobileActiveLink}
-                  onClick={toggleMobileMenu}
-                  to="/">
-                  Головна
-                </NavLink>
-                <NavLink
-                  className={isMobileActiveLink}
-                  onClick={toggleMobileMenu}
-                  to="/movies">
-                  Фільми
-                </NavLink>
-                <NavLink
-                  className={isMobileActiveLink}
-                  onClick={toggleMobileMenu}
-                  to="/serials">
-                  Серіали
-                </NavLink>
-                <SearchBar
-                  className="block md:hidden ml-8 mt-4"
-                  onAction={toggleMobileMenu}
-                />
-              </div>
-            </>
-
-            // </Container>
-          )}
+          <button
+            type="button"
+            className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 text-slate-200 transition-colors hover:bg-slate-800 md:hidden"
+            aria-label={isMobileMenuOpen ? "Закрити меню" : "Відкрити меню"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
+
+        {isMobileMenuOpen && (
+          <div className="border-t border-slate-800 py-4 md:hidden">
+            <nav aria-label="Мобільна навігація" className="mb-4 grid gap-1">
+              {links.map(({ to, label, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  onClick={closeMobileMenu}
+                  className={navLinkClass}
+                >
+                  {label}
+                </NavLink>
+              ))}
+            </nav>
+            <SearchBar
+              className="max-w-none"
+              onAction={closeMobileMenu}
+            />
+          </div>
+        )}
       </Container>
     </header>
   );

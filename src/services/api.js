@@ -71,6 +71,31 @@ export const fetchMoviesPopularity = async () => {
   }
 };
 
+export const fetchMoviesNowPlaying = async () => {
+  try {
+    const response = await api.get("movie/now_playing");
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const fetchMoviesByGenre = async (genreId, page = 1) => {
+  try {
+    const response = await api.get("discover/movie", {
+      params: {
+        with_genres: genreId,
+        sort_by: "popularity.desc",
+        page,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 // TV SERIES
 
 export const fetchPopularSeries = async (page = 1) => {

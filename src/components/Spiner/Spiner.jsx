@@ -1,5 +1,9 @@
 export const Spinner = () => (
-  <div className="flex justify-center items-center min-h-[100px]">
-    <div className="w-12 h-12 border-4 border-grey-700 border-t-transparent rounded-full animate-spin"></div>
+  <div
+    className="flex min-h-[100px] items-center justify-center"
+    role="status"
+    aria-label="Завантаження"
+  >
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-blue-400"></div>
   </div>
 );
