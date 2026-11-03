@@ -4,12 +4,20 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  ExternalLink,
   Film,
   ListPlus,
   MapPin,
+  Play,
   Wallet,
+  X,
 } from "lucide-react";
-import { fetchMovieDetails, fetchTvSeriesDetails } from "../../services/api";
+import {
+  fetchMovieDetails,
+  fetchMovieVideos,
+  fetchTvSeriesDetails,
+  fetchTvSeriesVideos,
+} from "../../services/api";
 import { useMediaState } from "../../context/MediaStateContext";
 
 const mediaLists = [
@@ -46,11 +54,31 @@ const formatCurrency = (amount) =>
 const formatNames = (values) =>
   values?.length ? values.map((value) => value.name).join(", ") : "Невідомо";
 
+const selectTrailer = (videos = []) =>
+  videos
+    .filter(
+      (video) =>
+        video.site === "YouTube" &&
+        video.key &&
+        ["Trailer", "Teaser"].includes(video.type)
+    )
+    .sort((first, second) => {
+      const getPriority = (video) =>
+        (video.official ? 0 : 2) +
+        (video.type === "Trailer" ? 0 : 1) +
+        (video.iso_639_1 === "uk" ? 0 : video.iso_639_1 === "en" ? 1 : 2);
+
+      return getPriority(first) - getPriority(second);
+    })[0];
+
 export const MediaDetails = () => {
   const [mediaDetails, setMediaDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
+  const [trailer, setTrailer] = useState(null);
+  const [isTrailerLoading, setIsTrailerLoading] = useState(true);
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const listMenuRef = useRef(null);
 
   const { id } = useParams();
@@ -71,29 +99,59 @@ export const MediaDetails = () => {
       setIsLoading(true);
       setLoadError(false);
       setMediaDetails(null);
+      setTrailer(null);
+      setIsTrailerLoading(true);
+      setIsTrailerOpen(false);
 
       try {
         let data = null;
+        let mediaType = null;
 
         if (isMovieRoute) {
           data = await fetchMovieDetails(id);
+          mediaType = "movie";
         } else if (isSeriesRoute) {
           data = await fetchTvSeriesDetails(id);
+          mediaType = "tv";
         } else if (isSearchRoute) {
-          data =
-            (await fetchMovieDetails(id).catch(() => null)) ??
-            (await fetchTvSeriesDetails(id));
+          data = await fetchMovieDetails(id).catch(() => null);
+          mediaType = data ? "movie" : "tv";
+          data ??= await fetchTvSeriesDetails(id);
         }
 
         if (isMounted) {
           setMediaDetails(data);
           setLoadError(!data);
+          setIsLoading(false);
+        }
+
+        if (data) {
+          try {
+            const videoData =
+              mediaType === "tv"
+                ? await fetchTvSeriesVideos(id)
+                : await fetchMovieVideos(id);
+            const selectedTrailer = selectTrailer(videoData?.results);
+
+            if (isMounted) {
+              setTrailer(selectedTrailer || null);
+            }
+          } catch (error) {
+            console.error("Не вдалося завантажити трейлер:", error);
+          } finally {
+            if (isMounted) setIsTrailerLoading(false);
+          }
+        } else if (isMounted) {
+          setIsTrailerLoading(false);
         }
       } catch (error) {
-        console.error("Не вдалося завантажити інформацію про фільм:", error);
+        console.error("Не вдалося завантажити інформацію про медіа:", error);
         if (isMounted) setLoadError(true);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setIsTrailerLoading(false);
+        }
       }
     };
 
@@ -114,6 +172,19 @@ export const MediaDetails = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isTrailerOpen) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsTrailerOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isTrailerOpen]);
+
   const handleAddToList = (listId) => {
     toggleList(id, listId);
     setIsListOpen(false);
@@ -124,7 +195,7 @@ export const MediaDetails = () => {
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-400" role="status">
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-blue-400" />
-          Завантажуємо деталі фільму...
+          Завантажуємо деталі...
         </div>
       </div>
     );
@@ -135,10 +206,10 @@ export const MediaDetails = () => {
       <div className="mx-auto my-16 max-w-xl rounded-3xl border border-slate-800 bg-slate-900/80 px-6 py-12 text-center">
         <Film className="mx-auto mb-4 text-slate-500" size={36} />
         <h1 className="text-xl font-semibold text-white">
-          Не вдалося знайти цей фільм
+          Не вдалося знайти цей фільм або серіал
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Спробуйте повернутися до каталогу та вибрати інший фільм.
+          Спробуйте повернутися до каталогу та вибрати інший варіант.
         </p>
       </div>
     );
@@ -191,7 +262,7 @@ export const MediaDetails = () => {
               <img
                 className="aspect-[2/3] w-full rounded-2xl border border-white/10 object-cover shadow-2xl shadow-black/50"
                 src={`${imageBaseUrl}/w500${mediaDetails.poster_path}`}
-                alt={`Постер фільму «${title}»`}
+                alt={`Постер «${title}»`}
               />
             ) : (
               <div className="flex aspect-[2/3] w-full items-center justify-center rounded-2xl border border-white/10 bg-slate-800 text-slate-600">
@@ -246,7 +317,7 @@ export const MediaDetails = () => {
 
             <div className="mt-7">
               <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                Про фільм
+                Про {isSeriesRoute ? "серіал" : "фільм"}
               </h2>
               <p className="max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
                 {mediaDetails.overview || "Опис для цього фільму поки відсутній."}
@@ -254,6 +325,20 @@ export const MediaDetails = () => {
             </div>
 
             <div className="relative mt-8 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsTrailerOpen(true)}
+                disabled={!trailer || isTrailerLoading}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:border disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-400"
+              >
+                <Play size={17} fill="currentColor" aria-hidden="true" />
+                {isTrailerLoading
+                  ? "Завантажуємо трейлер..."
+                  : trailer
+                    ? "Дивитися трейлер"
+                    : "Трейлер недоступний"}
+              </button>
+
               <button
                 type="button"
                 onClick={() => toggleWatched(id)}
@@ -325,7 +410,7 @@ export const MediaDetails = () => {
               id="film-details-heading"
               className="mt-1 text-2xl font-bold text-white sm:text-3xl"
             >
-              Інформація про фільм
+              Інформація про {isSeriesRoute ? "серіал" : "фільм"}
             </h2>
           </div>
           <MapPin className="mb-1 hidden text-slate-600 sm:block" size={22} />
@@ -348,6 +433,60 @@ export const MediaDetails = () => {
           ))}
         </dl>
       </section>
+
+      {isTrailerOpen && trailer && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-sm sm:p-8"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsTrailerOpen(false);
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="trailer-heading"
+            className="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3 sm:px-6">
+              <h2
+                id="trailer-heading"
+                className="truncate font-semibold text-white"
+              >
+                Трейлер: {title}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsTrailerOpen(false)}
+                aria-label="Закрити трейлер"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400"
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="aspect-video bg-black">
+              <iframe
+                className="h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailer.key)}?autoplay=1`}
+                title={`Трейлер: ${title}`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+            <a
+              href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-3 text-sm text-slate-400 transition-colors hover:text-white sm:px-6"
+            >
+              Відкрити на YouTube
+              <ExternalLink size={15} aria-hidden="true" />
+            </a>
+          </section>
+        </div>
+      )}
     </article>
   );
 };

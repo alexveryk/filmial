@@ -38,6 +38,17 @@ export const fetchMovieDetails = async (movieId) => {
   }
 };
 
+export const fetchMovieVideos = async (movieId) => {
+  try {
+    const response = await api.get(`movie/${movieId}/videos`, {
+      params: { include_video_language: "uk-UA,en-US,null" },
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const fetchById = async (externalId) => {
   try {
     const response = await api.get(`find/${externalId}`);
@@ -113,6 +124,17 @@ export const fetchPopularSeries = async (page = 1) => {
 export const fetchTvSeriesDetails = async (seriesId) => {
   try {
     const response = await api.get(`tv/${seriesId}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const fetchTvSeriesVideos = async (seriesId) => {
+  try {
+    const response = await api.get(`tv/${seriesId}/videos`, {
+      params: { include_video_language: "uk-UA,en-US,null" },
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
