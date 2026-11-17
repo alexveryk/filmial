@@ -1,17 +1,18 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
 
 import "./index.css";
 import { App } from "./App";
 import { BrowserRouter } from "react-router-dom";
-import { MediaStateProvider } from "./context/MediaStateContext";
+import { store } from "./app/store";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BrowserRouter>
-      <MediaStateProvider>
+    <Provider store={store}>
+      <BrowserRouter>
         <App />
-      </MediaStateProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </Provider>
   </StrictMode>
 );

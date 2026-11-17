@@ -1,61 +1,43 @@
 import { useEffect, useState } from "react";
 import { Clapperboard } from "lucide-react";
-import { fetchMoviesTrending } from "../../../services/api";
 import { MediaList } from "../../MediaList/MediaList";
 import { Button } from "../../Button/Button";
 import { incrementPage } from "../../../services/incrementPage";
 import { Spinner } from "../../Spiner/Spiner";
+import { useGetTrendingMoviesQuery } from "../../../services/tmdbApi";
 
 export const Movies = () => {
   const [movies, setMovies] = useState([]);
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState("");
+  const {
+    currentData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useGetTrendingMoviesQuery(page);
 
   useEffect(() => {
-    let isCurrentRequest = true;
+    if (isError) {
+      setError("Не вдалося завантажити фільми. Спробуйте ще раз.");
+      return;
+    }
 
-    const getMovies = async () => {
-      setIsLoading(true);
-      setError("");
+    if (!Array.isArray(currentData?.results)) return;
+    setError("");
+    setMovies((previousMovies) => {
+      const nextItems =
+        page === 1
+          ? currentData.results
+          : [...previousMovies, ...currentData.results];
 
-      try {
-        const data = await fetchMoviesTrending(page);
-
-        if (!Array.isArray(data?.results)) {
-          throw new Error("TMDB повернув некоректний список фільмів.");
-        }
-
-        if (!isCurrentRequest) return;
-
-        setMovies((previousMovies) => {
-          const nextItems =
-            page === 1 ? data.results : [...previousMovies, ...data.results];
-
-          return nextItems.filter(
-            (item, index, array) =>
-              array.findIndex((candidate) => candidate.id === item.id) === index
-          );
-        });
-      } catch (error) {
-        console.error(error);
-        if (isCurrentRequest) {
-          setError("Не вдалося завантажити фільми. Спробуйте ще раз.");
-        }
-      } finally {
-        if (isCurrentRequest) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    getMovies();
-
-    return () => {
-      isCurrentRequest = false;
-    };
-  }, [page, retryCount]);
+      return nextItems.filter(
+        (item, index, array) =>
+          array.findIndex((candidate) => candidate.id === item.id) === index
+      );
+    });
+  }, [currentData, isError, page]);
 
   return (
     <section className="py-8 sm:py-10" aria-labelledby="movies-heading">
@@ -94,7 +76,7 @@ export const Movies = () => {
           <Button
             text="Спробувати ще"
             variant="secondary"
-            onClick={() => setRetryCount((count) => count + 1)}
+            onClick={refetch}
           />
         </div>
       )}
@@ -105,13 +87,13 @@ export const Movies = () => {
         </p>
       )}
 
-      {isLoading && movies.length > 0 && <Spinner />}
+      {isFetching && movies.length > 0 && <Spinner />}
 
-      {!isLoading && !error && movies.length > 0 && (
+      {!isFetching && !error && movies.length > 0 && (
         <div className="flex justify-center pb-4 pt-2">
           <Button
             text="Завантажити ще"
-            disabled={isLoading}
+            disabled={isFetching}
             onClick={() => incrementPage(setPage)}
           />
         </div>

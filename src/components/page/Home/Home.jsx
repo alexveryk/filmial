@@ -1,32 +1,15 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clapperboard, Play, Star, TrendingUp } from "lucide-react";
 import {
-  fetchMoviesByGenre,
-  fetchMoviesNowPlaying,
-  fetchMoviesPopularity,
-  fetchMoviesTrending,
-  fetchPopularSeries,
-} from "../../../services/api";
+  useGetMoviesByGenreQuery,
+  useGetNowPlayingMoviesQuery,
+  useGetPopularMoviesQuery,
+  useGetPopularSeriesQuery,
+  useGetTrendingMoviesQuery,
+} from "../../../services/tmdbApi";
 import { MediaActions } from "../../MediaActions/MediaActions";
 import { MediaCard } from "../../MediaCard/MediaCard";
 import { Spinner } from "../../Spiner/Spiner";
-
-const initialSections = {
-  featured: { items: [], loading: true, error: false },
-  newReleases: { items: [], loading: true, error: false },
-  comedies: { items: [], loading: true, error: false },
-  series: { items: [], loading: true, error: false },
-  trending: { items: [], loading: true, error: false },
-};
-
-const sectionRequests = [
-  { key: "featured", load: fetchMoviesPopularity },
-  { key: "newReleases", load: fetchMoviesNowPlaying },
-  { key: "comedies", load: () => fetchMoviesByGenre(35) },
-  { key: "series", load: fetchPopularSeries },
-  { key: "trending", load: fetchMoviesTrending },
-];
 
 const shelves = [
   {
@@ -123,41 +106,38 @@ const MovieShelf = ({ shelf, section }) => (
 );
 
 export const Home = () => {
-  const [sections, setSections] = useState(initialSections);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    sectionRequests.forEach(async ({ key, load }) => {
-      try {
-        const data = await load();
-
-        if (!Array.isArray(data?.results)) {
-          throw new Error(`TMDB повернув некоректну добірку: ${key}`);
-        }
-
-        if (isMounted) {
-          setSections((previous) => ({
-            ...previous,
-            [key]: { items: data.results, loading: false, error: false },
-          }));
-        }
-      } catch (error) {
-        console.error(`Не вдалося завантажити добірку "${key}":`, error);
-
-        if (isMounted) {
-          setSections((previous) => ({
-            ...previous,
-            [key]: { items: [], loading: false, error: true },
-          }));
-        }
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const featuredQuery = useGetPopularMoviesQuery();
+  const newReleasesQuery = useGetNowPlayingMoviesQuery();
+  const comediesQuery = useGetMoviesByGenreQuery({ genreId: 35 });
+  const seriesQuery = useGetPopularSeriesQuery(1);
+  const trendingQuery = useGetTrendingMoviesQuery(1);
+  const sections = {
+    featured: {
+      items: featuredQuery.data?.results || [],
+      loading: featuredQuery.isLoading,
+      error: featuredQuery.isError,
+    },
+    newReleases: {
+      items: newReleasesQuery.data?.results || [],
+      loading: newReleasesQuery.isLoading,
+      error: newReleasesQuery.isError,
+    },
+    comedies: {
+      items: comediesQuery.data?.results || [],
+      loading: comediesQuery.isLoading,
+      error: comediesQuery.isError,
+    },
+    series: {
+      items: seriesQuery.data?.results || [],
+      loading: seriesQuery.isLoading,
+      error: seriesQuery.isError,
+    },
+    trending: {
+      items: trendingQuery.data?.results || [],
+      loading: trendingQuery.isLoading,
+      error: trendingQuery.isError,
+    },
+  };
 
   const featured = sections.featured.items[0];
   const featuredYear = featured ? getYear(featured) : "";

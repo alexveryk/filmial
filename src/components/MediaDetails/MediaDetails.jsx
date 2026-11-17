@@ -12,13 +12,27 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
-  fetchMovieDetails,
-  fetchMovieVideos,
-  fetchTvSeriesDetails,
-  fetchTvSeriesVideos,
-} from "../../services/api";
-import { useMediaState } from "../../context/MediaStateContext";
+  selectIsFavorite,
+  toggleFavorite,
+} from "../../features/favorites/favoritesSlice";
+import {
+  selectCustomListIds,
+  toggleCustomList,
+} from "../../features/customLists/customListsSlice";
+import {
+  selectIsWatchLater,
+  toggleWatchLater,
+} from "../../features/watchLater/watchLaterSlice";
+import {
+  selectIsWatched,
+  toggleWatched,
+} from "../../features/watched/watchedSlice";
+import {
+  useGetMediaDetailsQuery,
+  useGetMediaVideosQuery,
+} from "../../services/tmdbApi";
 
 const mediaLists = [
   { id: 1, name: "Комедії" },
@@ -72,94 +86,51 @@ const selectTrailer = (videos = []) =>
     })[0];
 
 export const MediaDetails = () => {
-  const [mediaDetails, setMediaDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
-  const [trailer, setTrailer] = useState(null);
-  const [isTrailerLoading, setIsTrailerLoading] = useState(true);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const listMenuRef = useRef(null);
 
   const { id } = useParams();
   const { pathname } = useLocation();
-  const { isWatched, getSelectedListIds, toggleWatched, toggleList } =
-    useMediaState();
-  const watched = isWatched(id);
-  const selectedListIds = getSelectedListIds(id);
+  const dispatch = useAppDispatch();
+  const watched = useAppSelector((state) => selectIsWatched(state, id));
+  const isFavorite = useAppSelector((state) => selectIsFavorite(state, id));
+  const isWatchLater = useAppSelector((state) => selectIsWatchLater(state, id));
+  const customListIds = useAppSelector((state) => selectCustomListIds(state, id));
 
   const isMovieRoute = pathname.includes("/movies/");
   const isSeriesRoute = pathname.includes("/serials/");
-  const isSearchRoute = pathname.includes("/search/");
+  const routeMediaType = isSeriesRoute
+    ? "tv"
+    : isMovieRoute
+      ? "movie"
+      : "unknown";
+  const {
+    data: mediaDetails,
+    isLoading,
+    isError: loadError,
+  } = useGetMediaDetailsQuery(
+    { id, mediaType: routeMediaType },
+    { skip: !id }
+  );
+  const trailerMediaType = mediaDetails?.media_type || routeMediaType;
+  const {
+    data: videoData,
+    isLoading: isTrailerLoading,
+  } = useGetMediaVideosQuery(
+    { id, mediaType: trailerMediaType },
+    { skip: !mediaDetails || trailerMediaType === "unknown" }
+  );
+  const trailer = selectTrailer(videoData?.results);
+  const selectedListIds = [
+    ...customListIds,
+    ...(isFavorite ? [3] : []),
+    ...(isWatchLater ? [4] : []),
+  ];
 
   useEffect(() => {
-    let isMounted = true;
-
-    const getDetails = async () => {
-      setIsLoading(true);
-      setLoadError(false);
-      setMediaDetails(null);
-      setTrailer(null);
-      setIsTrailerLoading(true);
-      setIsTrailerOpen(false);
-
-      try {
-        let data = null;
-        let mediaType = null;
-
-        if (isMovieRoute) {
-          data = await fetchMovieDetails(id);
-          mediaType = "movie";
-        } else if (isSeriesRoute) {
-          data = await fetchTvSeriesDetails(id);
-          mediaType = "tv";
-        } else if (isSearchRoute) {
-          data = await fetchMovieDetails(id).catch(() => null);
-          mediaType = data ? "movie" : "tv";
-          data ??= await fetchTvSeriesDetails(id);
-        }
-
-        if (isMounted) {
-          setMediaDetails(data);
-          setLoadError(!data);
-          setIsLoading(false);
-        }
-
-        if (data) {
-          try {
-            const videoData =
-              mediaType === "tv"
-                ? await fetchTvSeriesVideos(id)
-                : await fetchMovieVideos(id);
-            const selectedTrailer = selectTrailer(videoData?.results);
-
-            if (isMounted) {
-              setTrailer(selectedTrailer || null);
-            }
-          } catch (error) {
-            console.error("Не вдалося завантажити трейлер:", error);
-          } finally {
-            if (isMounted) setIsTrailerLoading(false);
-          }
-        } else if (isMounted) {
-          setIsTrailerLoading(false);
-        }
-      } catch (error) {
-        console.error("Не вдалося завантажити інформацію про медіа:", error);
-        if (isMounted) setLoadError(true);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsTrailerLoading(false);
-        }
-      }
-    };
-
-    getDetails();
-    return () => {
-      isMounted = false;
-    };
-  }, [id, isMovieRoute, isSeriesRoute, isSearchRoute]);
+    setIsTrailerOpen(false);
+  }, [id]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -186,7 +157,13 @@ export const MediaDetails = () => {
   }, [isTrailerOpen]);
 
   const handleAddToList = (listId) => {
-    toggleList(id, listId);
+    if (listId === 1 || listId === 2) {
+      dispatch(toggleCustomList({ mediaId: id, listId }));
+    } else if (listId === 3) {
+      dispatch(toggleFavorite(id));
+    } else if (listId === 4) {
+      dispatch(toggleWatchLater(id));
+    }
     setIsListOpen(false);
   };
 
@@ -341,7 +318,7 @@ export const MediaDetails = () => {
 
               <button
                 type="button"
-                onClick={() => toggleWatched(id)}
+                onClick={() => dispatch(toggleWatched(id))}
                 aria-pressed={watched}
                 className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${
                   watched

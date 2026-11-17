@@ -1,7 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Heart, Pin, Plus } from "lucide-react";
-import { useMediaState } from "../../context/MediaStateContext";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import {
+  selectIsFavorite,
+  toggleFavorite,
+} from "../../features/favorites/favoritesSlice";
+import {
+  selectIsWatchLater,
+  toggleWatchLater,
+} from "../../features/watchLater/watchLaterSlice";
+import {
+  selectIsWatched,
+  toggleWatched,
+} from "../../features/watched/watchedSlice";
 
 const defaultLists = [
   { id: 4, name: "Хочу подивитися", icon: Pin },
@@ -14,24 +26,36 @@ export const MediaActions = ({ items, variant = "card" }) => {
   const rootRef = useRef(null);
   const buttonRef = useRef(null);
   const [menuPosition, setMenuPosition] = useState(null);
-  const { isWatched, getSelectedListIds, toggleWatched, toggleList } =
-    useMediaState();
+  const dispatch = useAppDispatch();
   const title = items.title || items.name || "Без назви";
-  const watched = isWatched(items.id);
-  const selectedListIds = getSelectedListIds(items.id);
+  const watched = useAppSelector((state) => selectIsWatched(state, items.id));
+  const isFavorite = useAppSelector((state) =>
+    selectIsFavorite(state, items.id)
+  );
+  const isWatchLater = useAppSelector((state) =>
+    selectIsWatchLater(state, items.id)
+  );
+  const selectedListIds = [
+    ...(isWatchLater ? [4] : []),
+    ...(isFavorite ? [3] : []),
+  ];
   const isHero = variant === "hero";
 
   const handleToggleWatched = useCallback(() => {
-    toggleWatched(items.id);
+    dispatch(toggleWatched(items.id));
     setIsOpen(false);
-  }, [items.id, toggleWatched]);
+  }, [dispatch, items.id]);
 
   const handleAddToList = useCallback(
     (listId) => {
-      toggleList(items.id, listId);
+      dispatch(
+        listId === 3
+          ? toggleFavorite(items.id)
+          : toggleWatchLater(items.id)
+      );
       setIsOpen(false);
     },
-    [items.id, toggleList]
+    [dispatch, items.id]
   );
 
   const toggleMenu = () => {
