@@ -74,7 +74,7 @@ const selectTrailer = (videos = []) =>
       (video) =>
         video.site === "YouTube" &&
         video.key &&
-        ["Trailer", "Teaser"].includes(video.type)
+        ["Trailer", "Teaser"].includes(video.type),
     )
     .sort((first, second) => {
       const getPriority = (video) =>
@@ -96,7 +96,9 @@ export const MediaDetails = () => {
   const watched = useAppSelector((state) => selectIsWatched(state, id));
   const isFavorite = useAppSelector((state) => selectIsFavorite(state, id));
   const isWatchLater = useAppSelector((state) => selectIsWatchLater(state, id));
-  const customListIds = useAppSelector((state) => selectCustomListIds(state, id));
+  const customListIds = useAppSelector((state) =>
+    selectCustomListIds(state, id),
+  );
 
   const isMovieRoute = pathname.includes("/movies/");
   const isSeriesRoute = pathname.includes("/serials/");
@@ -109,18 +111,13 @@ export const MediaDetails = () => {
     data: mediaDetails,
     isLoading,
     isError: loadError,
-  } = useGetMediaDetailsQuery(
-    { id, mediaType: routeMediaType },
-    { skip: !id }
-  );
+  } = useGetMediaDetailsQuery({ id, mediaType: routeMediaType }, { skip: !id });
   const trailerMediaType = mediaDetails?.media_type || routeMediaType;
-  const {
-    data: videoData,
-    isLoading: isTrailerLoading,
-  } = useGetMediaVideosQuery(
-    { id, mediaType: trailerMediaType },
-    { skip: !mediaDetails || trailerMediaType === "unknown" }
-  );
+  const { data: videoData, isLoading: isTrailerLoading } =
+    useGetMediaVideosQuery(
+      { id, mediaType: trailerMediaType },
+      { skip: !mediaDetails || trailerMediaType === "unknown" },
+    );
   const trailer = selectTrailer(videoData?.results);
   const selectedListIds = [
     ...customListIds,
@@ -202,14 +199,35 @@ export const MediaDetails = () => {
   const runtime =
     mediaDetails.runtime || mediaDetails.episode_run_time?.[0] || null;
   const metadata = [
-    { label: "Мова оригіналу", value: mediaDetails.original_language || "Невідомо" },
+    {
+      label: "Мова оригіналу",
+      value: mediaDetails.original_language || "Невідомо",
+    },
     { label: "Жанри", value: formatNames(mediaDetails.genres) },
-    { label: "Країна виробництва", value: formatNames(mediaDetails.production_countries) },
-    { label: "Бюджет", value: formatCurrency(mediaDetails.budget), icon: Wallet },
-    { label: "Дохід", value: formatCurrency(mediaDetails.revenue), icon: Wallet },
+    {
+      label: "Країна виробництва",
+      value: formatNames(mediaDetails.production_countries),
+    },
+    {
+      label: "Бюджет",
+      value: formatCurrency(mediaDetails.budget),
+      icon: Wallet,
+    },
+    {
+      label: "Дохід",
+      value: formatCurrency(mediaDetails.revenue),
+      icon: Wallet,
+    },
     { label: "Статус", value: mediaDetails.status || "Невідомо" },
-    { label: "Тривалість", value: runtime ? `${runtime} хв.` : "Невідомо", icon: Clock3 },
-    { label: "Компанії-виробники", value: formatNames(mediaDetails.production_companies) },
+    {
+      label: "Тривалість",
+      value: runtime ? `${runtime} хв.` : "Невідомо",
+      icon: Clock3,
+    },
+    {
+      label: "Компанії-виробники",
+      value: formatNames(mediaDetails.production_companies),
+    },
   ];
 
   return (
@@ -276,8 +294,10 @@ export const MediaDetails = () => {
                 <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-400 text-xs font-bold text-amber-300">
                   {rating}
                 </span>
-                <span className="text-sm font-bold text-white">
-                  /10 <span className="ml-1 text-xs font-normal text-slate-500">TMDB</span>
+                <span className="text-sm font-bold ">
+                  <span className="ml-1 text-xsfont-bold text-slate-300">
+                    TMDB
+                  </span>
                 </span>
               </div>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-300">
@@ -297,7 +317,8 @@ export const MediaDetails = () => {
                 Про {isSeriesRoute ? "серіал" : "фільм"}
               </h2>
               <p className="max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-                {mediaDetails.overview || "Опис для цього фільму поки відсутній."}
+                {mediaDetails.overview ||
+                  "Опис для цього фільму поки відсутній."}
               </p>
             </div>
 
@@ -306,8 +327,7 @@ export const MediaDetails = () => {
                 type="button"
                 onClick={() => setIsTrailerOpen(true)}
                 disabled={!trailer || isTrailerLoading}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:border disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-400"
-              >
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:border disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-400">
                 <Play size={17} fill="currentColor" aria-hidden="true" />
                 {isTrailerLoading
                   ? "Завантажуємо трейлер..."
@@ -324,8 +344,7 @@ export const MediaDetails = () => {
                   watched
                     ? "bg-emerald-500 text-white hover:bg-emerald-400"
                     : "border border-slate-600 bg-slate-800/80 text-slate-100 hover:border-slate-500 hover:bg-slate-700"
-                }`}
-              >
+                }`}>
                 {watched ? <Check size={17} /> : <Film size={17} />}
                 Дивився
               </button>
@@ -336,8 +355,7 @@ export const MediaDetails = () => {
                   onClick={() => setIsListOpen((previous) => !previous)}
                   aria-expanded={isListOpen}
                   aria-haspopup="menu"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
-                >
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300">
                   <ListPlus size={18} />
                   Додати до...
                 </button>
@@ -345,8 +363,7 @@ export const MediaDetails = () => {
                 {isListOpen && (
                   <div
                     role="menu"
-                    className="absolute left-0 top-[calc(100%+8px)] z-20 w-60 rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/50"
-                  >
+                    className="absolute left-0 top-[calc(100%+8px)] z-20 w-60 rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/50">
                     {mediaLists.map((list) => {
                       const isSelected = selectedListIds.includes(list.id);
                       return (
@@ -356,8 +373,7 @@ export const MediaDetails = () => {
                           role="menuitemcheckbox"
                           aria-checked={isSelected}
                           onClick={() => handleAddToList(list.id)}
-                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800"
-                        >
+                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800">
                           <span>{list.name}</span>
                           {isSelected && (
                             <Check
@@ -385,8 +401,7 @@ export const MediaDetails = () => {
             </p>
             <h2
               id="film-details-heading"
-              className="mt-1 text-2xl font-bold text-white sm:text-3xl"
-            >
+              className="mt-1 text-2xl font-bold text-white sm:text-3xl">
               Інформація про {isSeriesRoute ? "серіал" : "фільм"}
             </h2>
           </div>
@@ -397,8 +412,7 @@ export const MediaDetails = () => {
           {metadata.map(({ label, value, icon: Icon }) => (
             <div
               key={label}
-              className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 transition-colors hover:border-slate-700"
-            >
+              className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 transition-colors hover:border-slate-700">
               <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 {Icon && <Icon size={14} className="text-blue-300" />}
                 {label}
@@ -418,27 +432,23 @@ export const MediaDetails = () => {
             if (event.target === event.currentTarget) {
               setIsTrailerOpen(false);
             }
-          }}
-        >
+          }}>
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="trailer-heading"
-            className="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
-          >
+            className="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3 sm:px-6">
               <h2
                 id="trailer-heading"
-                className="truncate font-semibold text-white"
-              >
+                className="truncate font-semibold text-white">
                 Трейлер: {title}
               </h2>
               <button
                 type="button"
                 onClick={() => setIsTrailerOpen(false)}
                 aria-label="Закрити трейлер"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400"
-              >
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400">
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
@@ -456,8 +466,7 @@ export const MediaDetails = () => {
               href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-3 text-sm text-slate-400 transition-colors hover:text-white sm:px-6"
-            >
+              className="inline-flex items-center gap-2 px-4 py-3 text-sm text-slate-400 transition-colors hover:text-white sm:px-6">
               Відкрити на YouTube
               <ExternalLink size={15} aria-hidden="true" />
             </a>

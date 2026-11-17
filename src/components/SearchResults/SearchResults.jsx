@@ -14,7 +14,7 @@ export const SearchResults = () => {
   const [totalPages, setTotalPages] = useState(1);
   const { currentData, isLoading, isFetching, isError } = useSearchMultiQuery(
     { query, page },
-    { skip: !query }
+    { skip: !query },
   );
 
   useEffect(() => {
@@ -26,18 +26,19 @@ export const SearchResults = () => {
   useEffect(() => {
     if (!currentData?.results) return;
     const mediaResults = currentData.results.filter((item) =>
-      ["movie", "tv"].includes(item.media_type)
+      ["movie", "tv"].includes(item.media_type),
     );
     setResult((previous) =>
-      page === 1 ? mediaResults : [...previous, ...mediaResults]
+      page === 1 ? mediaResults : [...previous, ...mediaResults],
     );
     setTotalPages(currentData.total_pages || 1);
   }, [currentData, page]);
 
   return (
     <div>
-      <h1 className="mt-4 p-2 w-fit rounded-md bg-gray-800 text-white font-semibold">
-        Результат пошуку: {query}
+      <h1 className="mt-4 mb-5 p-3 w-fit rounded-xl bg-slate-800/80 text-white font-semibold border border-slate-700 shadow-lg shadow-black/20">
+        Результат пошуку:
+        <span className="ml-2 text-green-400 font-medium">{query}</span>
       </h1>
       {isLoading || (isFetching && page === 1) ? (
         <Spinner />
