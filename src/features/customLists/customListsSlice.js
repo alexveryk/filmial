@@ -1,6 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = { byMediaId: {} };
+const initialState = {
+  byMediaId: {},
+  namesById: { 1: "Комедії", 2: "Романтичні" },
+};
 const supportedListIds = [1, 2];
 const emptyListIds = [];
 
@@ -10,7 +13,8 @@ const customListsSlice = createSlice({
   reducers: {
     toggleCustomList: (state, action) => {
       const { mediaId: rawMediaId, listId } = action.payload;
-      if (!supportedListIds.includes(listId)) return;
+      if (!supportedListIds.includes(Number(listId)) &&
+        !state.namesById[String(listId)]) return;
 
       const mediaId = String(rawMediaId);
       const currentListIds = state.byMediaId[mediaId] || [];
@@ -24,10 +28,27 @@ const customListsSlice = createSlice({
         delete state.byMediaId[mediaId];
       }
     },
+    createCustomList: (state, action) => {
+      const name = String(action.payload || "").trim();
+      if (!name) return;
+      const existingId = Object.entries(state.namesById).find(
+        ([, listName]) => listName.toLowerCase() === name.toLowerCase(),
+      )?.[0];
+      if (existingId) return;
+
+      const numericIds = Object.keys(state.namesById).map(Number);
+      const nextId = Math.max(2, ...numericIds) + 1;
+      state.namesById[nextId] = name;
+    },
   },
 });
 
-export const { toggleCustomList } = customListsSlice.actions;
+export const { toggleCustomList, createCustomList } = customListsSlice.actions;
 export const selectCustomListIds = (state, mediaId) =>
   state.customLists.byMediaId[mediaId] || emptyListIds;
+export const selectCustomLists = (state) =>
+  Object.entries(state.customLists.namesById).map(([id, name]) => ({
+    id: Number(id),
+    name,
+  }));
 export default customListsSlice.reducer;

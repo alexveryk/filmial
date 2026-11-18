@@ -38,12 +38,18 @@ export const loadPersistedMediaState = () => {
   const watchedByMediaId = isRecord(storedState.watchedByMediaId)
     ? storedState.watchedByMediaId
     : {};
+  const watchNowByMediaId = isRecord(storedState.watchNowByMediaId)
+    ? storedState.watchNowByMediaId
+    : {};
   const watchedEpisodesByMediaId = isRecord(storedState.watchedEpisodesByMediaId)
     ? storedState.watchedEpisodesByMediaId
     : {};
   const listsByMediaId = isRecord(storedState.listsByMediaId)
     ? storedState.listsByMediaId
     : {};
+  const customListNames = isRecord(storedState.customListNames)
+    ? storedState.customListNames
+    : { 1: "Комедії", 2: "Романтичні" };
 
   return {
     watched: {
@@ -64,8 +70,13 @@ export const loadPersistedMediaState = () => {
         ).map(([mediaId]) => [mediaId, true])
       ),
     },
+    watchNow: { byMediaId: watchNowByMediaId },
     customLists: {
-      byMediaId: selectListMemberships(listsByMediaId, CUSTOM_LIST_IDS),
+      byMediaId: selectListMemberships(
+        listsByMediaId,
+        Object.keys(customListNames).map(Number),
+      ),
+      namesById: customListNames,
     },
   };
 };
@@ -74,17 +85,26 @@ export const persistMediaState = (state) => {
   const allMediaIds = new Set([
     ...Object.keys(state.watched.byMediaId),
     ...Object.keys(state.watched.episodesByMediaId || {}),
+    ...Object.keys(state.watchNow.byMediaId),
     ...Object.keys(state.favorites.byMediaId),
     ...Object.keys(state.watchLater.byMediaId),
     ...Object.keys(state.customLists.byMediaId),
   ]);
   const watchedByMediaId = {};
+  const watchNowByMediaId = {};
   const watchedEpisodesByMediaId = {};
   const listsByMediaId = {};
+  const customListNames = state.customLists.namesById || {
+    1: "Комедії",
+    2: "Романтичні",
+  };
 
   allMediaIds.forEach((mediaId) => {
     if (state.watched.byMediaId[mediaId]) {
       watchedByMediaId[mediaId] = true;
+    }
+    if (state.watchNow.byMediaId[mediaId]) {
+      watchNowByMediaId[mediaId] = true;
     }
     const episodeKeys = state.watched.episodesByMediaId?.[mediaId];
     if (isRecord(episodeKeys) && Object.keys(episodeKeys).length) {
@@ -95,6 +115,7 @@ export const persistMediaState = (state) => {
       ...(state.customLists.byMediaId[mediaId] || []),
       ...(state.favorites.byMediaId[mediaId] ? [FAVORITES_LIST_ID] : []),
       ...(state.watchLater.byMediaId[mediaId] ? [WATCH_LATER_LIST_ID] : []),
+      ...(state.watchNow.byMediaId[mediaId] ? ["watch-now"] : []),
     ];
 
     if (listIds.length) {
@@ -107,8 +128,10 @@ export const persistMediaState = (state) => {
       STORAGE_KEY,
       JSON.stringify({
         watchedByMediaId,
+        watchNowByMediaId,
         watchedEpisodesByMediaId,
         listsByMediaId,
+        customListNames,
       })
     );
   } catch (error) {

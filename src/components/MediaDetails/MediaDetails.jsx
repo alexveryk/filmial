@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useParams } from "react-router-dom";
 import {
   CalendarDays,
@@ -28,6 +29,10 @@ import {
   toggleCustomList,
 } from "../../features/customLists/customListsSlice";
 import {
+  selectIsWatchNow,
+  toggleWatchNow,
+} from "../../features/watchNow/watchNowSlice";
+import {
   selectIsWatchLater,
   toggleWatchLater,
 } from "../../features/watchLater/watchLaterSlice";
@@ -44,10 +49,12 @@ import {
 } from "../../services/tmdbApi";
 
 const mediaLists = [
+  { id: "watch-now", name: "Дивлюся зараз" },
+  { id: "watched", name: "Переглянуто" },
   { id: 1, name: "Комедії" },
   { id: 2, name: "Романтичні" },
   { id: 3, name: "Улюблені" },
-  { id: 4, name: "Планую подивитися" },
+  { id: 4, name: "Буду дивитися" },
 ];
 
 const imageBaseUrl = "https://image.tmdb.org/t/p";
@@ -77,6 +84,15 @@ const formatCurrency = (amount) =>
 const formatNames = (values) =>
   values?.length ? values.map((value) => value.name).join(", ") : "Невідомо";
 
+const isReleased = (date) => {
+  if (!date) return true;
+  const parsedDate = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsedDate.getTime())) return true;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return parsedDate <= today;
+};
+
 const selectTrailer = (videos = []) =>
   videos
     .filter(
@@ -98,7 +114,10 @@ export const MediaDetails = () => {
   const [isListOpen, setIsListOpen] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [listMenuPosition, setListMenuPosition] = useState(null);
   const listMenuRef = useRef(null);
+  const listMenuButtonRef = useRef(null);
+  const listPopoverRef = useRef(null);
 
   const { id } = useParams();
   const { pathname } = useLocation();
@@ -106,6 +125,7 @@ export const MediaDetails = () => {
   const watched = useAppSelector((state) => selectIsWatched(state, id));
   const isFavorite = useAppSelector((state) => selectIsFavorite(state, id));
   const isWatchLater = useAppSelector((state) => selectIsWatchLater(state, id));
+  const isWatchNow = useAppSelector((state) => selectIsWatchNow(state, id));
   const customListIds = useAppSelector((state) =>
     selectCustomListIds(state, id),
   );
@@ -155,9 +175,14 @@ export const MediaDetails = () => {
   const trailer = selectTrailer(videoData?.results);
   const selectedListIds = [
     ...customListIds,
+    ...(isWatchNow ? ["watch-now"] : []),
+    ...(watched ? ["watched"] : []),
     ...(isFavorite ? [3] : []),
     ...(isWatchLater ? [4] : []),
   ];
+  const releaseDate =
+    mediaDetails?.release_date || mediaDetails?.first_air_date || "";
+  const mediaIsReleased = isReleased(releaseDate);
 
   useEffect(() => {
     setIsTrailerOpen(false);
@@ -174,7 +199,11 @@ export const MediaDetails = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (listMenuRef.current && !listMenuRef.current.contains(event.target)) {
+      if (
+        listMenuRef.current &&
+        !listMenuRef.current.contains(event.target) &&
+        !listPopoverRef.current?.contains(event.target)
+      ) {
         setIsListOpen(false);
       }
     };
@@ -182,6 +211,18 @@ export const MediaDetails = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isListOpen) return undefined;
+
+    const closeOnViewportChange = () => setIsListOpen(false);
+    window.addEventListener("resize", closeOnViewportChange);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    return () => {
+      window.removeEventListener("resize", closeOnViewportChange);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+    };
+  }, [isListOpen]);
 
   useEffect(() => {
     if (!isTrailerOpen) return undefined;
@@ -197,7 +238,11 @@ export const MediaDetails = () => {
   }, [isTrailerOpen]);
 
   const handleAddToList = (listId) => {
-    if (listId === 1 || listId === 2) {
+    if (listId === "watch-now") {
+      dispatch(toggleWatchNow(id));
+    } else if (listId === "watched") {
+      dispatch(toggleWatched(id));
+    } else if (listId === 1 || listId === 2) {
       dispatch(toggleCustomList({ mediaId: id, listId }));
     } else if (listId === 3) {
       dispatch(toggleFavorite(id));
@@ -205,6 +250,30 @@ export const MediaDetails = () => {
       dispatch(toggleWatchLater(id));
     }
     setIsListOpen(false);
+  };
+
+  const toggleListMenu = () => {
+    if (isListOpen) {
+      setIsListOpen(false);
+      return;
+    }
+
+    const bounds = listMenuButtonRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const menuWidth = Math.min(280, window.innerWidth - 16);
+    const menuHeight = Math.min(window.innerHeight - 16, 320);
+    const showAbove = bounds.bottom + menuHeight + 8 > window.innerHeight;
+    const top = showAbove
+      ? Math.max(8, bounds.top - menuHeight - 8)
+      : Math.min(window.innerHeight - menuHeight - 8, bounds.bottom + 8);
+    const left = Math.max(
+      8,
+      Math.min(bounds.left, window.innerWidth - menuWidth - 8),
+    );
+
+    setListMenuPosition({ top, left, width: menuWidth });
+    setIsListOpen(true);
   };
 
   if (isLoading) {
@@ -233,8 +302,6 @@ export const MediaDetails = () => {
   }
 
   const title = mediaDetails.title || mediaDetails.name || "Без назви";
-  const releaseDate =
-    mediaDetails.release_date || mediaDetails.first_air_date || "";
   const rating =
     typeof mediaDetails.vote_average === "number"
       ? mediaDetails.vote_average.toFixed(1)
@@ -294,18 +361,16 @@ export const MediaDetails = () => {
       season_number: episode.season_number ?? season.season_number,
     })),
   );
-  const allEpisodeKeys = allEpisodes.map(
-    (episode) =>
-      `S${String(episode.season_number).padStart(2, "0")}E${String(
-        episode.episode_number,
-      ).padStart(2, "0")}`,
-  );
-  const totalEpisodeCount =
-    allEpisodeKeys.length ||
-    seasonData.reduce(
-      (total, season) => total + (season.episode_count || 0),
-      0,
+  const allEpisodeKeys = allEpisodes
+    .filter((episode) => isReleased(episode.air_date))
+    .map(
+      (episode) =>
+        `S${String(episode.season_number).padStart(2, "0")}E${String(
+          episode.episode_number,
+        ).padStart(2, "0")}`,
     );
+  const totalEpisodeCount =
+    allEpisodeKeys.length;
   const watchedEpisodeCount = allEpisodeKeys.filter(
     (episodeKey) => watchedEpisodes[episodeKey],
   ).length;
@@ -316,6 +381,15 @@ export const MediaDetails = () => {
         "0",
       )}E${String(episode.episode_number).padStart(2, "0")}`,
   );
+  const releasedSeasonEpisodeKeys = (seasonDetails?.episodes || [])
+    .filter((episode) => isReleased(episode.air_date))
+    .map(
+      (episode) =>
+        `S${String(episode.season_number ?? seasonDetails.season_number).padStart(
+          2,
+          "0",
+        )}E${String(episode.episode_number).padStart(2, "0")}`,
+    );
   const episodeProgress = totalEpisodeCount
     ? Math.round((watchedEpisodeCount / totalEpisodeCount) * 100)
     : 0;
@@ -428,21 +502,24 @@ export const MediaDetails = () => {
 
               <button
                 type="button"
-                onClick={() => dispatch(toggleWatched(id))}
+                onClick={mediaIsReleased ? () => dispatch(toggleWatched(id)) : undefined}
+                disabled={!mediaIsReleased}
                 aria-pressed={watched}
+                title={mediaIsReleased ? "Позначити перегляд" : "Тайтл ще не вийшов"}
                 className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${
                   watched
                     ? "bg-emerald-500 text-white hover:bg-emerald-400"
                     : "border border-slate-600 bg-slate-800/80 text-slate-100 hover:border-slate-500 hover:bg-slate-700"
-                }`}>
+                } ${!mediaIsReleased ? "cursor-not-allowed opacity-50" : ""}`}>
                 {watched ? <Check size={17} /> : <Film size={17} />}
                 Дивився
               </button>
 
               <div ref={listMenuRef} className="relative">
                 <button
+                  ref={listMenuButtonRef}
                   type="button"
-                  onClick={() => setIsListOpen((previous) => !previous)}
+                  onClick={toggleListMenu}
                   aria-expanded={isListOpen}
                   aria-haspopup="menu"
                   className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300">
@@ -450,33 +527,53 @@ export const MediaDetails = () => {
                   Додати до...
                 </button>
 
-                {isListOpen && (
-                  <div
-                    role="menu"
-                    className="absolute left-0 top-[calc(100%+8px)] z-20 w-60 rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/50">
-                    {mediaLists.map((list) => {
-                      const isSelected = selectedListIds.includes(list.id);
-                      return (
-                        <button
-                          key={list.id}
-                          type="button"
-                          role="menuitemcheckbox"
-                          aria-checked={isSelected}
-                          onClick={() => handleAddToList(list.id)}
-                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800">
-                          <span>{list.name}</span>
-                          {isSelected && (
-                            <Check
-                              size={16}
-                              className="text-emerald-400"
-                              aria-label="Додано до списку"
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                {isListOpen &&
+                  listMenuPosition &&
+                  createPortal(
+                    <div
+                      ref={listPopoverRef}
+                      role="menu"
+                      className="fixed z-[100] max-h-[calc(100vh-16px)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/50"
+                      style={{
+                        top: listMenuPosition.top,
+                        left: listMenuPosition.left,
+                        width: listMenuPosition.width,
+                      }}>
+                      {mediaLists.map((list) => {
+                        const isSelected = selectedListIds.includes(list.id);
+                        return (
+                          <button
+                            key={list.id}
+                            type="button"
+                            role="menuitemcheckbox"
+                            aria-checked={isSelected}
+                            disabled={
+                              list.id === "watched" && !mediaIsReleased
+                            }
+                            onClick={
+                              list.id === "watched" && !mediaIsReleased
+                                ? undefined
+                                : () => handleAddToList(list.id)
+                            }
+                            className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800 ${
+                              list.id === "watched" && !mediaIsReleased
+                                ? "cursor-not-allowed opacity-50"
+                                : ""
+                            }`}>
+                            <span>{list.name}</span>
+                            {isSelected && (
+                              <Check
+                                size={16}
+                                className="text-emerald-400"
+                                aria-label="Додано до списку"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>,
+                    document.body,
+                  )}
               </div>
             </div>
           </div>
@@ -604,26 +701,28 @@ export const MediaDetails = () => {
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <p className="text-sm text-slate-400">
                     Сезон {selectedSeason}:{" "}
-                    {seasonEpisodeKeys.filter((key) => watchedEpisodes[key]).length} з{" "}
-                    {seasonEpisodeKeys.length} переглянуто
+                    {releasedSeasonEpisodeKeys.filter((key) => watchedEpisodes[key]).length} з{" "}
+                    {releasedSeasonEpisodeKeys.length} переглянуто
                   </p>
                   <button
                     type="button"
+                    disabled={!releasedSeasonEpisodeKeys.length}
                     onClick={() => {
-                      const watchedInSeason = seasonEpisodeKeys.filter(
+                      const watchedInSeason = releasedSeasonEpisodeKeys.filter(
                         (key) => watchedEpisodes[key],
                       ).length;
                       dispatch(
                         setEpisodesWatched({
                           mediaId: id,
-                          episodeKeys: seasonEpisodeKeys,
-                          watched: watchedInSeason !== seasonEpisodeKeys.length,
+                          episodeKeys: releasedSeasonEpisodeKeys,
+                          watched:
+                            watchedInSeason !== releasedSeasonEpisodeKeys.length,
                         }),
                       );
                     }}
                     className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-colors hover:border-blue-400/50 hover:text-white sm:text-sm">
                     <Check size={15} aria-hidden="true" />
-                    {seasonEpisodeKeys.every((key) => watchedEpisodes[key])
+                    {releasedSeasonEpisodeKeys.every((key) => watchedEpisodes[key])
                       ? "Позначити сезон не переглянутим"
                       : "Позначити весь сезон переглянутим"}
                   </button>
@@ -660,6 +759,7 @@ export const MediaDetails = () => {
                       "0",
                     )}E${String(episode.episode_number).padStart(2, "0")}`;
                     const isEpisodeWatched = Boolean(watchedEpisodes[episodeKey]);
+                    const episodeIsReleased = isReleased(episode.air_date);
 
                     return (
                       <article
@@ -701,24 +801,27 @@ export const MediaDetails = () => {
                               <button
                                 type="button"
                                 aria-pressed={isEpisodeWatched}
+                                disabled={!episodeIsReleased}
                                 aria-label={
-                                  isEpisodeWatched
+                                  !episodeIsReleased
+                                    ? `Серію ${episodeCode} ще не випущено`
+                                    : isEpisodeWatched
                                     ? `Позначити серію ${episodeCode} не переглянутою`
                                     : `Позначити серію ${episodeCode} переглянутою`
                                 }
-                                onClick={() =>
+                                onClick={episodeIsReleased ? () =>
                                   dispatch(
                                     toggleEpisodeWatched({
                                       mediaId: id,
                                       episodeKey,
                                     }),
                                   )
-                                }
+                                : undefined}
                                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${
                                   isEpisodeWatched
                                     ? "border-emerald-400/40 bg-emerald-500 text-white shadow-lg shadow-emerald-950/30"
                                     : "border-slate-700 bg-slate-800 text-slate-400 hover:border-blue-400/50 hover:text-blue-300"
-                                }`}>
+                                } ${!episodeIsReleased ? "cursor-not-allowed opacity-40" : ""}`}>
                                 <Check size={17} strokeWidth={2.5} aria-hidden="true" />
                               </button>
                             </div>

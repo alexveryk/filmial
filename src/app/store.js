@@ -4,6 +4,7 @@ import userReducer from "../features/user/userSlice";
 import favoritesReducer from "../features/favorites/favoritesSlice";
 import watchedReducer from "../features/watched/watchedSlice";
 import watchLaterReducer from "../features/watchLater/watchLaterSlice";
+import watchNowReducer from "../features/watchNow/watchNowSlice";
 import customListsReducer from "../features/customLists/customListsSlice";
 import filtersReducer from "../features/filters/filtersSlice";
 import { tmdbApi } from "../services/tmdbApi";
@@ -19,6 +20,7 @@ export const store = configureStore({
     favorites: favoritesReducer,
     watched: watchedReducer,
     watchLater: watchLaterReducer,
+    watchNow: watchNowReducer,
     customLists: customListsReducer,
     filters: filtersReducer,
     [tmdbApi.reducerPath]: tmdbApi.reducer,
@@ -36,6 +38,7 @@ store.subscribe(() => {
     nextState.watched === lastPersistedState.watched &&
     nextState.favorites === lastPersistedState.favorites &&
     nextState.watchLater === lastPersistedState.watchLater &&
+    nextState.watchNow === lastPersistedState.watchNow &&
     nextState.customLists === lastPersistedState.customLists
   ) {
     return;
