@@ -111,6 +111,12 @@ export const tmdbApi = createApi({
         }),
       }),
     }),
+    getMediaCredits: builder.query({
+      query: ({ id, mediaType }) => ({
+        url: `${mediaType}/${id}/${mediaType === "tv" ? "aggregate_credits" : "credits"}`,
+        params: withLanguage(),
+      }),
+    }),
   }),
 });
 
@@ -124,4 +130,5 @@ export const {
   useSearchMultiQuery,
   useGetMediaDetailsQuery,
   useGetMediaVideosQuery,
+  useGetMediaCreditsQuery,
 } = tmdbApi;

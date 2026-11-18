@@ -9,6 +9,7 @@ import {
   ListPlus,
   MapPin,
   Play,
+  UserRound,
   Wallet,
   X,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import {
 } from "../../features/watched/watchedSlice";
 import {
   useGetMediaDetailsQuery,
+  useGetMediaCreditsQuery,
   useGetMediaVideosQuery,
 } from "../../services/tmdbApi";
 
@@ -118,6 +120,13 @@ export const MediaDetails = () => {
       { id, mediaType: trailerMediaType },
       { skip: !mediaDetails || trailerMediaType === "unknown" },
     );
+  const {
+    data: creditsData,
+    isLoading: isCreditsLoading,
+  } = useGetMediaCreditsQuery(
+    { id, mediaType: trailerMediaType },
+    { skip: !mediaDetails || trailerMediaType === "unknown" },
+  );
   const trailer = selectTrailer(videoData?.results);
   const selectedListIds = [
     ...customListIds,
@@ -229,6 +238,22 @@ export const MediaDetails = () => {
       value: formatNames(mediaDetails.production_companies),
     },
   ];
+  const cast = (creditsData?.cast || [])
+    .map((actor) => {
+      const role = actor.character
+        || actor.roles?.map((item) => item.character).filter(Boolean).join(", ")
+        || "Роль невідома";
+
+      return {
+        id: actor.id,
+        name: actor.name,
+        originalName: actor.original_name,
+        character: role,
+        profilePath: actor.profile_path,
+      };
+    })
+    .filter((actor) => actor.id)
+    .slice(0, 20);
 
   return (
     <article className="mx-auto max-w-6xl pb-12 text-slate-100">
@@ -423,6 +448,75 @@ export const MediaDetails = () => {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="mt-10" aria-labelledby="cast-heading">
+        <div className="mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">
+            Зйомки
+          </p>
+          <h2
+            id="cast-heading"
+            className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+            У головних ролях
+          </h2>
+        </div>
+
+        {isCreditsLoading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {Array.from({ length: 6 }, (_, index) => (
+              <div
+                key={index}
+                className="animate-pulse overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+                <div className="aspect-[2/3] bg-slate-800" />
+                <div className="space-y-2 p-4">
+                  <div className="h-4 w-4/5 rounded bg-slate-700" />
+                  <div className="h-3 w-3/5 rounded bg-slate-800" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : cast.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {cast.map((actor) => (
+              <article
+                key={actor.id}
+                className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 transition-colors hover:border-slate-700">
+                {actor.profilePath ? (
+                  <img
+                    className="aspect-[2/3] w-full object-cover"
+                    src={`${imageBaseUrl}/w185${actor.profilePath}`}
+                    alt={actor.name ? `Фото актора ${actor.name}` : "Актор"}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-800 text-slate-600">
+                    <UserRound size={48} strokeWidth={1.2} aria-hidden="true" />
+                    <span className="sr-only">Фото актора недоступне</span>
+                  </div>
+                )}
+                <div className="p-3 sm:p-4">
+                  <h3 className="line-clamp-2 text-sm font-bold leading-5 text-white sm:text-base">
+                    {actor.name || "Ім'я невідоме"}
+                  </h3>
+                  {actor.originalName &&
+                    actor.originalName !== actor.name && (
+                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                        {actor.originalName}
+                      </p>
+                    )}
+                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-blue-300 sm:text-sm">
+                    {actor.character}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-sm text-slate-400">
+            Інформація про акторський склад поки недоступна.
+          </div>
+        )}
       </section>
 
       {isTrailerOpen && trailer && (
