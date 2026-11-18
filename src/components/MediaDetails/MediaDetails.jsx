@@ -19,6 +19,11 @@ import {
   toggleFavorite,
 } from "../../features/favorites/favoritesSlice";
 import {
+  selectWatchedEpisodes,
+  setEpisodesWatched,
+  toggleEpisodeWatched,
+} from "../../features/watched/watchedSlice";
+import {
   selectCustomListIds,
   toggleCustomList,
 } from "../../features/customLists/customListsSlice";
@@ -35,6 +40,7 @@ import {
   useGetMediaCreditsQuery,
   useGetMediaVideosQuery,
   useGetSeasonDetailsQuery,
+  useGetSeriesSeasonsQuery,
 } from "../../services/tmdbApi";
 
 const mediaLists = [
@@ -103,6 +109,9 @@ export const MediaDetails = () => {
   const customListIds = useAppSelector((state) =>
     selectCustomListIds(state, id),
   );
+  const watchedEpisodes = useAppSelector((state) =>
+    selectWatchedEpisodes(state, id),
+  );
 
   const isMovieRoute = pathname.includes("/movies/");
   const isSeriesRoute = pathname.includes("/serials/");
@@ -138,6 +147,10 @@ export const MediaDetails = () => {
   } = useGetSeasonDetailsQuery(
     { id, seasonNumber: selectedSeason },
     { skip: !isSeriesRoute || !mediaDetails || !seasonData.length },
+  );
+  const { data: allSeasonsDetails } = useGetSeriesSeasonsQuery(
+    { id, seasons: mediaDetails?.seasons },
+    { skip: !isSeriesRoute || !mediaDetails?.seasons?.length },
   );
   const trailer = selectTrailer(videoData?.results);
   const selectedListIds = [
@@ -275,6 +288,37 @@ export const MediaDetails = () => {
     })
     .filter((actor) => actor.id)
     .slice(0, 20);
+  const allEpisodes = (allSeasonsDetails || []).flatMap((season) =>
+    (season.episodes || []).map((episode) => ({
+      ...episode,
+      season_number: episode.season_number ?? season.season_number,
+    })),
+  );
+  const allEpisodeKeys = allEpisodes.map(
+    (episode) =>
+      `S${String(episode.season_number).padStart(2, "0")}E${String(
+        episode.episode_number,
+      ).padStart(2, "0")}`,
+  );
+  const totalEpisodeCount =
+    allEpisodeKeys.length ||
+    seasonData.reduce(
+      (total, season) => total + (season.episode_count || 0),
+      0,
+    );
+  const watchedEpisodeCount = allEpisodeKeys.filter(
+    (episodeKey) => watchedEpisodes[episodeKey],
+  ).length;
+  const seasonEpisodeKeys = (seasonDetails?.episodes || []).map(
+    (episode) =>
+      `S${String(episode.season_number ?? seasonDetails.season_number).padStart(
+        2,
+        "0",
+      )}E${String(episode.episode_number).padStart(2, "0")}`,
+  );
+  const episodeProgress = totalEpisodeCount
+    ? Math.round((watchedEpisodeCount / totalEpisodeCount) * 100)
+    : 0;
 
   return (
     <article className="mx-auto max-w-6xl pb-12 text-slate-100">
@@ -486,6 +530,50 @@ export const MediaDetails = () => {
 
           {seasonData.length > 0 ? (
             <>
+              <div className="mb-5 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Прогрес перегляду
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-white">
+                      Переглянуто {watchedEpisodeCount} з {totalEpisodeCount} серій
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!allEpisodeKeys.length}
+                    onClick={() =>
+                      dispatch(
+                        setEpisodesWatched({
+                          mediaId: id,
+                          episodeKeys: allEpisodeKeys,
+                          watched: watchedEpisodeCount !== totalEpisodeCount,
+                        }),
+                      )
+                    }
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-blue-400/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                    <Check size={16} aria-hidden="true" />
+                    {watchedEpisodeCount === totalEpisodeCount &&
+                    totalEpisodeCount
+                      ? "Позначити весь серіал не переглянутим"
+                      : "Позначити весь серіал переглянутим"}
+                  </button>
+                </div>
+                <div
+                  className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax={totalEpisodeCount}
+                  aria-valuenow={watchedEpisodeCount}
+                  aria-label="Прогрес перегляду серіалу">
+                  <div
+                    className="h-full rounded-full bg-blue-500 transition-[width] duration-500"
+                    style={{ width: `${episodeProgress}%` }}
+                  />
+                </div>
+              </div>
+
               <div
                 className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-2"
                 role="tablist"
@@ -512,6 +600,36 @@ export const MediaDetails = () => {
                 })}
               </div>
 
+              {seasonEpisodeKeys.length > 0 && (
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="text-sm text-slate-400">
+                    Сезон {selectedSeason}:{" "}
+                    {seasonEpisodeKeys.filter((key) => watchedEpisodes[key]).length} з{" "}
+                    {seasonEpisodeKeys.length} переглянуто
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const watchedInSeason = seasonEpisodeKeys.filter(
+                        (key) => watchedEpisodes[key],
+                      ).length;
+                      dispatch(
+                        setEpisodesWatched({
+                          mediaId: id,
+                          episodeKeys: seasonEpisodeKeys,
+                          watched: watchedInSeason !== seasonEpisodeKeys.length,
+                        }),
+                      );
+                    }}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-colors hover:border-blue-400/50 hover:text-white sm:text-sm">
+                    <Check size={15} aria-hidden="true" />
+                    {seasonEpisodeKeys.every((key) => watchedEpisodes[key])
+                      ? "Позначити сезон не переглянутим"
+                      : "Позначити весь сезон переглянутим"}
+                  </button>
+                </div>
+              )}
+
               {isSeasonLoading ? (
                 <div className="space-y-3" role="status">
                   {Array.from({ length: 4 }, (_, index) => (
@@ -537,11 +655,20 @@ export const MediaDetails = () => {
                     const episodeCode = `С${String(seasonNumber).padStart(2, "0")}:Е${String(
                       episode.episode_number,
                     ).padStart(2, "0")}`;
+                    const episodeKey = `S${String(seasonNumber).padStart(
+                      2,
+                      "0",
+                    )}E${String(episode.episode_number).padStart(2, "0")}`;
+                    const isEpisodeWatched = Boolean(watchedEpisodes[episodeKey]);
 
                     return (
                       <article
                         key={episode.id}
-                        className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 transition-colors hover:border-slate-700">
+                        className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
+                          isEpisodeWatched
+                            ? "border-emerald-500/25 bg-slate-900/55 opacity-75"
+                            : "border-slate-800 bg-slate-900/80 hover:border-slate-700"
+                        }`}>
                         <div className="grid sm:grid-cols-[240px_minmax(0,1fr)]">
                           {episode.still_path ? (
                             <img
@@ -561,14 +688,39 @@ export const MediaDetails = () => {
                             </div>
                           )}
                           <div className="min-w-0 p-4 sm:p-5">
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-blue-300">
-                              <span>{episodeCode}</span>
-                              {episode.air_date && (
-                                <span className="inline-flex items-center gap-1.5 font-normal text-slate-500">
-                                  <CalendarDays size={13} aria-hidden="true" />
-                                  {formatDate(episode.air_date)}
-                                </span>
-                              )}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-blue-300">
+                                <span>{episodeCode}</span>
+                                {episode.air_date && (
+                                  <span className="inline-flex items-center gap-1.5 font-normal text-slate-500">
+                                    <CalendarDays size={13} aria-hidden="true" />
+                                    {formatDate(episode.air_date)}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                aria-pressed={isEpisodeWatched}
+                                aria-label={
+                                  isEpisodeWatched
+                                    ? `Позначити серію ${episodeCode} не переглянутою`
+                                    : `Позначити серію ${episodeCode} переглянутою`
+                                }
+                                onClick={() =>
+                                  dispatch(
+                                    toggleEpisodeWatched({
+                                      mediaId: id,
+                                      episodeKey,
+                                    }),
+                                  )
+                                }
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${
+                                  isEpisodeWatched
+                                    ? "border-emerald-400/40 bg-emerald-500 text-white shadow-lg shadow-emerald-950/30"
+                                    : "border-slate-700 bg-slate-800 text-slate-400 hover:border-blue-400/50 hover:text-blue-300"
+                                }`}>
+                                <Check size={17} strokeWidth={2.5} aria-hidden="true" />
+                              </button>
                             </div>
                             <h3 className="mt-2 text-base font-bold leading-6 text-white sm:text-lg">
                               {episode.name || "Назва невідома"}

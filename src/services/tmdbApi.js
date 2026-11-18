@@ -123,6 +123,25 @@ export const tmdbApi = createApi({
         params: withLanguage(),
       }),
     }),
+    getSeriesSeasons: builder.query({
+      async queryFn({ id, seasons }, _queryApi, _extraOptions, runBaseQuery) {
+        const results = await Promise.all(
+          (seasons || [])
+            .filter((season) => season.season_number >= 0)
+            .map(async (season) => {
+              const result = await runBaseQuery({
+                url: `tv/${id}/season/${season.season_number}`,
+                params: withLanguage(),
+              });
+              return result.error ? null : result.data;
+            }),
+        );
+
+        return {
+          data: results.filter(Boolean),
+        };
+      },
+    }),
   }),
 });
 
@@ -138,4 +157,5 @@ export const {
   useGetMediaVideosQuery,
   useGetMediaCreditsQuery,
   useGetSeasonDetailsQuery,
+  useGetSeriesSeasonsQuery,
 } = tmdbApi;

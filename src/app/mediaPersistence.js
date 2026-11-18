@@ -38,12 +38,18 @@ export const loadPersistedMediaState = () => {
   const watchedByMediaId = isRecord(storedState.watchedByMediaId)
     ? storedState.watchedByMediaId
     : {};
+  const watchedEpisodesByMediaId = isRecord(storedState.watchedEpisodesByMediaId)
+    ? storedState.watchedEpisodesByMediaId
+    : {};
   const listsByMediaId = isRecord(storedState.listsByMediaId)
     ? storedState.listsByMediaId
     : {};
 
   return {
-    watched: { byMediaId: watchedByMediaId },
+    watched: {
+      byMediaId: watchedByMediaId,
+      episodesByMediaId: watchedEpisodesByMediaId,
+    },
     favorites: {
       byMediaId: Object.fromEntries(
         Object.entries(
@@ -67,16 +73,22 @@ export const loadPersistedMediaState = () => {
 export const persistMediaState = (state) => {
   const allMediaIds = new Set([
     ...Object.keys(state.watched.byMediaId),
+    ...Object.keys(state.watched.episodesByMediaId || {}),
     ...Object.keys(state.favorites.byMediaId),
     ...Object.keys(state.watchLater.byMediaId),
     ...Object.keys(state.customLists.byMediaId),
   ]);
   const watchedByMediaId = {};
+  const watchedEpisodesByMediaId = {};
   const listsByMediaId = {};
 
   allMediaIds.forEach((mediaId) => {
     if (state.watched.byMediaId[mediaId]) {
       watchedByMediaId[mediaId] = true;
+    }
+    const episodeKeys = state.watched.episodesByMediaId?.[mediaId];
+    if (isRecord(episodeKeys) && Object.keys(episodeKeys).length) {
+      watchedEpisodesByMediaId[mediaId] = episodeKeys;
     }
 
     const listIds = [
@@ -93,7 +105,11 @@ export const persistMediaState = (state) => {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ watchedByMediaId, listsByMediaId })
+      JSON.stringify({
+        watchedByMediaId,
+        watchedEpisodesByMediaId,
+        listsByMediaId,
+      })
     );
   } catch (error) {
     console.error("Не вдалося зберегти стан медіа:", error);
