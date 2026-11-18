@@ -117,6 +117,12 @@ export const tmdbApi = createApi({
         params: withLanguage(),
       }),
     }),
+    getSeasonDetails: builder.query({
+      query: ({ id, seasonNumber }) => ({
+        url: `tv/${id}/season/${seasonNumber}`,
+        params: withLanguage(),
+      }),
+    }),
   }),
 });
 
@@ -131,4 +137,5 @@ export const {
   useGetMediaDetailsQuery,
   useGetMediaVideosQuery,
   useGetMediaCreditsQuery,
+  useGetSeasonDetailsQuery,
 } = tmdbApi;

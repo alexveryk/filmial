@@ -34,6 +34,7 @@ import {
   useGetMediaDetailsQuery,
   useGetMediaCreditsQuery,
   useGetMediaVideosQuery,
+  useGetSeasonDetailsQuery,
 } from "../../services/tmdbApi";
 
 const mediaLists = [
@@ -90,6 +91,7 @@ const selectTrailer = (videos = []) =>
 export const MediaDetails = () => {
   const [isListOpen, setIsListOpen] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(1);
   const listMenuRef = useRef(null);
 
   const { id } = useParams();
@@ -127,6 +129,16 @@ export const MediaDetails = () => {
     { id, mediaType: trailerMediaType },
     { skip: !mediaDetails || trailerMediaType === "unknown" },
   );
+  const seasonData = isSeriesRoute
+    ? mediaDetails?.seasons?.filter((season) => season.season_number >= 0) || []
+    : [];
+  const {
+    data: seasonDetails,
+    isLoading: isSeasonLoading,
+  } = useGetSeasonDetailsQuery(
+    { id, seasonNumber: selectedSeason },
+    { skip: !isSeriesRoute || !mediaDetails || !seasonData.length },
+  );
   const trailer = selectTrailer(videoData?.results);
   const selectedListIds = [
     ...customListIds,
@@ -137,6 +149,15 @@ export const MediaDetails = () => {
   useEffect(() => {
     setIsTrailerOpen(false);
   }, [id]);
+
+  useEffect(() => {
+    setSelectedSeason(
+      mediaDetails?.seasons?.find((season) => season.season_number >= 1)
+        ?.season_number
+        || mediaDetails?.seasons?.[0]?.season_number
+        || 1,
+    );
+  }, [id, mediaDetails]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -449,6 +470,132 @@ export const MediaDetails = () => {
           ))}
         </dl>
       </section>
+
+      {isSeriesRoute && (
+        <section className="mt-10" aria-labelledby="episodes-heading">
+          <div className="mb-5">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">
+              Епізоди
+            </p>
+            <h2
+              id="episodes-heading"
+              className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+              Список серій
+            </h2>
+          </div>
+
+          {seasonData.length > 0 ? (
+            <>
+              <div
+                className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-2"
+                role="tablist"
+                aria-label="Сезони серіалу">
+                {seasonData.map((season) => {
+                  const isSelected = selectedSeason === season.season_number;
+                  return (
+                    <button
+                      key={season.id || season.season_number}
+                      type="button"
+                      role="tab"
+                      aria-selected={isSelected}
+                      onClick={() => setSelectedSeason(season.season_number)}
+                      className={`shrink-0 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${
+                        isSelected
+                          ? "border-blue-400/40 bg-blue-500 text-white"
+                          : "border-slate-700 bg-slate-900/80 text-slate-300 hover:border-slate-600 hover:text-white"
+                      }`}>
+                      {season.season_number === 0
+                        ? "Спецвипуски"
+                        : `Сезон ${season.season_number}`}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isSeasonLoading ? (
+                <div className="space-y-3" role="status">
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <div
+                      key={index}
+                      className="animate-pulse overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+                      <div className="grid sm:grid-cols-[240px_minmax(0,1fr)]">
+                        <div className="aspect-video bg-slate-800 sm:aspect-[16/10]" />
+                        <div className="space-y-3 p-5">
+                          <div className="h-4 w-24 rounded bg-slate-800" />
+                          <div className="h-5 w-3/5 rounded bg-slate-700" />
+                          <div className="h-12 w-full rounded bg-slate-800" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : seasonDetails?.episodes?.length ? (
+                <div className="space-y-3">
+                  {seasonDetails.episodes.map((episode) => {
+                    const seasonNumber =
+                      episode.season_number ?? seasonDetails.season_number;
+                    const episodeCode = `С${String(seasonNumber).padStart(2, "0")}:Е${String(
+                      episode.episode_number,
+                    ).padStart(2, "0")}`;
+
+                    return (
+                      <article
+                        key={episode.id}
+                        className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 transition-colors hover:border-slate-700">
+                        <div className="grid sm:grid-cols-[240px_minmax(0,1fr)]">
+                          {episode.still_path ? (
+                            <img
+                              className="aspect-video w-full object-cover sm:h-full sm:max-h-[180px]"
+                              src={`${imageBaseUrl}/w300${episode.still_path}`}
+                              alt={
+                                episode.name
+                                  ? `Кадр із серії «${episode.name}»`
+                                  : "Кадр із серії"
+                              }
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="flex aspect-video items-center justify-center bg-slate-800 text-slate-600 sm:h-full sm:max-h-[180px]">
+                              <Film size={38} strokeWidth={1.2} aria-hidden="true" />
+                              <span className="sr-only">Прев'ю недоступне</span>
+                            </div>
+                          )}
+                          <div className="min-w-0 p-4 sm:p-5">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-blue-300">
+                              <span>{episodeCode}</span>
+                              {episode.air_date && (
+                                <span className="inline-flex items-center gap-1.5 font-normal text-slate-500">
+                                  <CalendarDays size={13} aria-hidden="true" />
+                                  {formatDate(episode.air_date)}
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="mt-2 text-base font-bold leading-6 text-white sm:text-lg">
+                              {episode.name || "Назва невідома"}
+                            </h3>
+                            <p className="mt-2 text-sm leading-6 text-slate-400">
+                              {episode.overview ||
+                                "Опис для цього епізоду поки відсутній."}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-sm text-slate-400">
+                  Епізоди цього сезону поки недоступні.
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-sm text-slate-400">
+              Інформація про сезони поки недоступна.
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="mt-10" aria-labelledby="cast-heading">
         <div className="mb-5">
