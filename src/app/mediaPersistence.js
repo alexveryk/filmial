@@ -1,10 +1,14 @@
+import { createAction } from "@reduxjs/toolkit";
+
 const STORAGE_KEY = "filmial-media-state";
 const FAVORITES_LIST_ID = 3;
 const WATCH_LATER_LIST_ID = 4;
-const CUSTOM_LIST_IDS = [1, 2];
+const DEFAULT_CUSTOM_LIST_NAMES = { 1: "Комедії", 2: "Романтичні" };
 
 const isRecord = (value) =>
   value !== null && typeof value === "object" && !Array.isArray(value);
+
+export const restoreMediaState = createAction("media/restore");
 
 const readStoredMediaState = () => {
   try {
@@ -33,8 +37,8 @@ const selectListMemberships = (listsByMediaId, acceptedIds) =>
       ])
   );
 
-export const loadPersistedMediaState = () => {
-  const storedState = readStoredMediaState();
+export const deserializeMediaState = (rawState) => {
+  const storedState = isRecord(rawState) ? rawState : {};
   const watchedByMediaId = isRecord(storedState.watchedByMediaId)
     ? storedState.watchedByMediaId
     : {};
@@ -49,7 +53,7 @@ export const loadPersistedMediaState = () => {
     : {};
   const customListNames = isRecord(storedState.customListNames)
     ? storedState.customListNames
-    : { 1: "Комедії", 2: "Романтичні" };
+    : DEFAULT_CUSTOM_LIST_NAMES;
 
   return {
     watched: {
@@ -81,7 +85,10 @@ export const loadPersistedMediaState = () => {
   };
 };
 
-export const persistMediaState = (state) => {
+export const loadPersistedMediaState = () =>
+  deserializeMediaState(readStoredMediaState());
+
+export const serializeMediaState = (state) => {
   const allMediaIds = new Set([
     ...Object.keys(state.watched.byMediaId),
     ...Object.keys(state.watched.episodesByMediaId || {}),
@@ -94,10 +101,8 @@ export const persistMediaState = (state) => {
   const watchNowByMediaId = {};
   const watchedEpisodesByMediaId = {};
   const listsByMediaId = {};
-  const customListNames = state.customLists.namesById || {
-    1: "Комедії",
-    2: "Романтичні",
-  };
+  const customListNames =
+    state.customLists.namesById || DEFAULT_CUSTOM_LIST_NAMES;
 
   allMediaIds.forEach((mediaId) => {
     if (state.watched.byMediaId[mediaId]) {
@@ -123,17 +128,18 @@ export const persistMediaState = (state) => {
     }
   });
 
+  return {
+    watchedByMediaId,
+    watchNowByMediaId,
+    watchedEpisodesByMediaId,
+    listsByMediaId,
+    customListNames,
+  };
+};
+
+export const persistMediaState = (state) => {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        watchedByMediaId,
-        watchNowByMediaId,
-        watchedEpisodesByMediaId,
-        listsByMediaId,
-        customListNames,
-      })
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeMediaState(state)));
   } catch (error) {
     console.error("Не вдалося зберегти стан медіа:", error);
   }

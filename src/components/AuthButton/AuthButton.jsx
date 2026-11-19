@@ -1,7 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithCredential,
+  signOut as firebaseSignOut,
+} from "firebase/auth";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { store } from "../../app/store";
+import {
+  deserializeMediaState,
+  restoreMediaState,
+  serializeMediaState,
+} from "../../app/mediaPersistence";
 import {
   clearAuthIdentity,
   selectAuthStatus,
@@ -21,8 +33,23 @@ import {
   initializeGoogleAuth,
   signOutFromGoogle,
 } from "../../services/googleAuth";
+import {
+  loadCloudMediaState,
+  saveCloudMediaState,
+  setCloudMediaSyncUser,
+  waitForCloudMediaWrites,
+} from "../../services/firebaseMedia";
+import { firebaseAuth, requireFirebaseAuth } from "../../services/firebase";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+const clearSignedInMedia = (dispatch) => {
+  dispatch(clearFavorites());
+  dispatch(clearWatched());
+  dispatch(clearWatchLater());
+  dispatch(clearWatchNow());
+  dispatch(clearCustomLists());
+};
 
 export const AuthButton = ({ className = "" }) => {
   const dispatch = useDispatch();
@@ -30,57 +57,165 @@ export const AuthButton = ({ className = "" }) => {
   const status = useSelector(selectAuthStatus);
   const profile = useSelector(selectUserProfile);
   const tokenClientRef = useRef(null);
+  const processedUidRef = useRef(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
-    if (status === "authenticated") return;
+    if (status === "authenticated") {
+      tokenClientRef.current = null;
+      setIsAuthReady(false);
+      return undefined;
+    }
+
+    let active = true;
+    setIsAuthReady(false);
+    setAuthError("");
 
     initializeGoogleAuth(googleClientId, async (response) => {
+      if (!active) return;
       if (response.error) {
         console.error("Не вдалося увійти через Google:", response.error);
+        setAuthError(`Google не завершив авторизацію (${response.error}).`);
         setIsLoading(false);
         return;
       }
 
       try {
-        const userResponse = await fetch(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          {
-            headers: {
-              Authorization: `Bearer ${response.access_token}`,
-            },
-          }
+        const credential = GoogleAuthProvider.credential(
+          null,
+          response.access_token
         );
-
-        if (!userResponse.ok) {
-          throw new Error("Не вдалося отримати профіль Google");
-        }
-
-        const payload = await userResponse.json();
-        dispatch(setAuthIdentity(payload.sub));
-        dispatch(
-          setUserProfile({
-            displayName: payload.name || null,
-            email: payload.email || null,
-            photoURL: payload.picture || null,
-          })
-        );
+        await signInWithCredential(requireFirebaseAuth(), credential);
       } catch (error) {
-        console.error(error.message);
-      } finally {
+        console.error("Не вдалося увійти через Firebase:", error);
+        setAuthError(
+          error.code === "auth/operation-not-allowed"
+            ? "У Firebase не ввімкнено вхід через Google."
+            : error.code === "auth/unauthorized-domain"
+              ? "Додайте цей сайт до дозволених доменів у Firebase Authentication."
+              : `Не вдалося увійти через Google (${error.code || "невідома помилка"}).`
+        );
         setIsLoading(false);
       }
     })
       .then((tokenClient) => {
+        if (!active) return;
         tokenClientRef.current = tokenClient;
+        setIsAuthReady(true);
       })
       .catch((error) => {
+        if (!active) return;
         console.error(error.message);
+        setAuthError(error.message);
         setIsLoading(false);
       });
-  }, [dispatch, status]);
+
+    return () => {
+      active = false;
+      tokenClientRef.current = null;
+    };
+  }, [status]);
+
+  useEffect(() => {
+    if (!firebaseAuth) return undefined;
+
+    let active = true;
+    let hasSeenAuthState = false;
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      (firebaseUser) => {
+        if (!active) return;
+
+        if (!firebaseUser) {
+          setCloudMediaSyncUser(null);
+          processedUidRef.current = null;
+          const wasInitialAuthState = !hasSeenAuthState;
+          hasSeenAuthState = true;
+          if (store.getState().auth.uid) {
+            dispatch(clearAuthIdentity());
+            dispatch(clearUserProfile());
+            if (!wasInitialAuthState) {
+              clearSignedInMedia(dispatch);
+            }
+            if (window.location.pathname === "/profile") {
+              navigate("/");
+            }
+          }
+          return;
+        }
+
+        hasSeenAuthState = true;
+        if (processedUidRef.current === firebaseUser.uid) return;
+        processedUidRef.current = firebaseUser.uid;
+        setCloudMediaSyncUser(null);
+
+        void (async () => {
+          const isCurrentUser = () =>
+            active && processedUidRef.current === firebaseUser.uid;
+          const currentState = store.getState();
+          const canReuseLocalData =
+            !currentState.auth.uid || currentState.auth.uid === firebaseUser.uid;
+
+          if (currentState.auth.uid && !canReuseLocalData) {
+            dispatch(clearAuthIdentity());
+            dispatch(clearUserProfile());
+            clearSignedInMedia(dispatch);
+          }
+
+          try {
+            const cloudMediaState = await loadCloudMediaState(firebaseUser.uid);
+            if (!isCurrentUser()) return;
+
+            if (cloudMediaState) {
+              dispatch(restoreMediaState(deserializeMediaState(cloudMediaState)));
+            } else {
+              const mediaState = serializeMediaState(store.getState());
+              await saveCloudMediaState(firebaseUser.uid, mediaState);
+            }
+
+            if (!isCurrentUser()) return;
+            setCloudMediaSyncUser(firebaseUser.uid);
+            dispatch(setAuthIdentity(firebaseUser.uid));
+            dispatch(
+              setUserProfile({
+                displayName: firebaseUser.displayName || null,
+                email: firebaseUser.email || null,
+                photoURL: firebaseUser.photoURL || null,
+              })
+            );
+            setIsLoading(false);
+          } catch (error) {
+            console.error("Не вдалося синхронізувати списки з Firebase:", error);
+            if (!isCurrentUser()) return;
+
+            dispatch(setAuthIdentity(firebaseUser.uid));
+            dispatch(
+              setUserProfile({
+                displayName: firebaseUser.displayName || null,
+                email: firebaseUser.email || null,
+                photoURL: firebaseUser.photoURL || null,
+              })
+            );
+            setIsLoading(false);
+          }
+        })();
+      },
+      (error) => {
+        console.error("Не вдалося перевірити авторизацію Firebase:", error);
+        setAuthError("Не вдалося перевірити вхід у Firebase.");
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [dispatch, navigate]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -107,25 +242,34 @@ export const AuthButton = ({ className = "" }) => {
   }, [isMenuOpen]);
 
   const handleSignIn = () => {
-    if (!tokenClientRef.current) return;
+    if (!tokenClientRef.current) {
+      setAuthError("Google ще підключається. Спробуйте натиснути ще раз.");
+      return;
+    }
+    setAuthError("");
     setIsLoading(true);
-    tokenClientRef.current.requestAccessToken();
+    try {
+      tokenClientRef.current.requestAccessToken();
+    } catch (error) {
+      console.error("Не вдалося відкрити вхід через Google:", error);
+      setAuthError("Не вдалося відкрити вхід через Google. Спробуйте ще раз.");
+      setIsLoading(false);
+    }
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setIsMenuOpen(false);
-    signOutFromGoogle();
-    dispatch(clearAuthIdentity());
-    dispatch(clearUserProfile());
-    dispatch(clearFavorites());
-    dispatch(clearWatched());
-    dispatch(clearWatchLater());
-    dispatch(clearWatchNow());
-    dispatch(clearCustomLists());
-    localStorage.removeItem("filmial-media-state");
+    try {
+      await waitForCloudMediaWrites();
+    } catch (error) {
+      console.error("Не вдалося зберегти списки перед виходом:", error);
+    }
 
-    if (window.location.pathname === "/profile") {
-      navigate("/");
+    try {
+      signOutFromGoogle();
+      await firebaseSignOut(requireFirebaseAuth());
+    } catch (error) {
+      console.error("Не вдалося вийти з Firebase:", error);
     }
   };
 
@@ -213,22 +357,35 @@ export const AuthButton = ({ className = "" }) => {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleSignIn}
-      disabled={isLoading}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-600/80 px-4 text-sm font-semibold text-white transition-colors hover:border-slate-500 hover:bg-slate-800/30 disabled:cursor-wait disabled:opacity-60 ${className}`}>
-      <svg
-        aria-hidden="true"
-        width="18"
-        height="18"
-        viewBox="0 0 18 18">
-        <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.23-.16-1.8H9v3.4h4.84a4.14 4.14 0 0 1-1.8 2.72v2.22h2.92c1.71-1.58 2.68-3.9 2.68-6.54Z"/>
-        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.22c-.8.54-1.84.86-3.04.86-2.34 0-4.33-1.58-5.04-3.7H.96v2.29A9 9 0 0 0 9 18Z"/>
-        <path fill="#FBBC05" d="M3.96 10.76A5.4 5.4 0 0 1 3.68 9c0-.61.1-1.21.28-1.76V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3-2.29Z"/>
-        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.34l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.95l3 2.29C4.67 5.16 6.66 3.58 9 3.58Z"/>
-      </svg>
-      <span>{isLoading ? "Завантаження…" : "Увійти через Google"}</span>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleSignIn}
+        disabled={isLoading || !isAuthReady}
+        className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-600/80 px-4 text-sm font-semibold text-white transition-colors hover:border-slate-500 hover:bg-slate-800/30 disabled:cursor-wait disabled:opacity-60 ${className}`}>
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 18 18">
+          <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.23-.16-1.8H9v3.4h4.84a4.14 4.14 0 0 1-1.8 2.72v2.22h2.92c1.71-1.58 2.68-3.9 2.68-6.54Z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.22c-.8.54-1.84.86-3.04.86-2.34 0-4.33-1.58-5.04-3.7H.96v2.29A9 9 0 0 0 9 18Z"/>
+          <path fill="#FBBC05" d="M3.96 10.76A5.4 5.4 0 0 1 3.68 9c0-.61.1-1.21.28-1.76V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3-2.29Z"/>
+          <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.34l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.95l3 2.29C4.67 5.16 6.66 3.58 9 3.58Z"/>
+        </svg>
+        <span>
+          {isLoading
+            ? "Завантаження…"
+            : isAuthReady
+              ? "Увійти через Google"
+              : "Підключення до Google…"}
+        </span>
+      </button>
+      {authError && (
+        <p role="alert" className="mt-2 max-w-64 text-xs text-red-300">
+          {authError}
+        </p>
+      )}
+    </>
   );
 };

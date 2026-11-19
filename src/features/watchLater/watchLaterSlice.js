@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { restoreMediaState } from "../../app/mediaPersistence";
 
 const initialState = { byMediaId: {} };
 
@@ -15,6 +16,9 @@ const watchLaterSlice = createSlice({
         state.byMediaId[mediaId] = true;
       }
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(restoreMediaState, (_state, action) => action.payload.watchLater);
   },
 });
 

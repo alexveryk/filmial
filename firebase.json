@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "filmialnative",
+      "rules": "firestore.rules"
+    }
+  ]
+}

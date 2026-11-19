@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { restoreMediaState } from "../../app/mediaPersistence";
 
 const initialState = { byMediaId: {}, episodesByMediaId: {} };
 
@@ -45,6 +46,9 @@ const watchedSlice = createSlice({
         delete state.episodesByMediaId[id];
       }
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(restoreMediaState, (_state, action) => action.payload.watched);
   },
 });
 

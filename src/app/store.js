@@ -11,11 +11,16 @@ import { tmdbApi } from "../services/tmdbApi";
 import {
   loadPersistedMediaState,
   persistMediaState,
+  serializeMediaState,
 } from "./mediaPersistence";
 import {
   loadPersistedAuthState,
   persistAuthState,
 } from "./authPersistence";
+import {
+  isCloudMediaSyncUser,
+  saveCloudMediaState,
+} from "../services/firebaseMedia";
 
 const persistedAuthState = loadPersistedAuthState();
 const persistedMediaState = loadPersistedMediaState();
@@ -57,4 +62,10 @@ store.subscribe(() => {
 
   lastPersistedState = nextState;
   persistMediaState(nextState);
+
+  if (nextState.auth.uid && isCloudMediaSyncUser(nextState.auth.uid)) {
+    saveCloudMediaState(nextState.auth.uid, serializeMediaState(nextState)).catch(
+      (error) => console.error("Не вдалося зберегти списки у Firebase:", error)
+    );
+  }
 });

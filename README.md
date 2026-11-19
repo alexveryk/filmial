@@ -10,3 +10,27 @@ Currently, two official plugins are available:
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Firebase media lists
+
+Media lists are stored in Firestore at `users/{uid}` and loaded when the user
+signs in. Existing browser-stored lists are copied to Firebase the first time
+that account is used.
+
+Firebase client settings belong in `.env.local` as `VITE_FIREBASE_API_KEY`,
+`VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
+`VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`,
+`VITE_FIREBASE_APP_ID`, and `VITE_FIREBASE_DATABASE_ID=filmialnative`. Keep the
+existing `VITE_GOOGLE_CLIENT_ID` setting.
+
+The app uses the named `filmialnative` database in Firestore Standard/Native
+mode. The existing `filmialdata` Enterprise database has Firestore API access
+disabled and cannot be used by the Firebase Web SDK. Create the new database
+with the Firebase CLI, choosing a region appropriate for your users:
+
+```sh
+npx firebase-tools firestore:databases:create filmialnative --location=europe-west1 --edition=standard --project=filmial
+npx firebase-tools deploy --only firestore:filmialnative --project=filmial
+```
+
+Enable Google as a Firebase Authentication provider before signing in.

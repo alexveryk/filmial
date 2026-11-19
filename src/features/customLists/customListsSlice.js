@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { restoreMediaState } from "../../app/mediaPersistence";
 
 const initialState = {
   byMediaId: {},
@@ -41,6 +42,9 @@ const customListsSlice = createSlice({
       const nextId = Math.max(2, ...numericIds) + 1;
       state.namesById[nextId] = name;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(restoreMediaState, (_state, action) => action.payload.customLists);
   },
 });
 
