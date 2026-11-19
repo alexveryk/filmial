@@ -12,6 +12,13 @@ import {
   loadPersistedMediaState,
   persistMediaState,
 } from "./mediaPersistence";
+import {
+  loadPersistedAuthState,
+  persistAuthState,
+} from "./authPersistence";
+
+const persistedAuthState = loadPersistedAuthState();
+const persistedMediaState = loadPersistedMediaState();
 
 export const store = configureStore({
   reducer: {
@@ -25,7 +32,10 @@ export const store = configureStore({
     filters: filtersReducer,
     [tmdbApi.reducerPath]: tmdbApi.reducer,
   },
-  preloadedState: loadPersistedMediaState(),
+  preloadedState: {
+    ...persistedMediaState,
+    ...persistedAuthState,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(tmdbApi.middleware),
 });
@@ -34,6 +44,7 @@ let lastPersistedState = store.getState();
 
 store.subscribe(() => {
   const nextState = store.getState();
+  persistAuthState(nextState);
   if (
     nextState.watched === lastPersistedState.watched &&
     nextState.favorites === lastPersistedState.favorites &&

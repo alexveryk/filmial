@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { Clapperboard, Menu, X } from "lucide-react";
 import { Container } from "../Container/Container";
 import { SearchBar } from "../SearchBar/SearchBar";
+import { AuthButton } from "../AuthButton/AuthButton";
 
 const links = [
   { to: "/", label: "Головна", end: true },
@@ -47,6 +48,7 @@ export const Header = () => {
           </nav>
 
           <SearchBar className="ml-auto hidden md:block" />
+          <AuthButton className="hidden md:block" />
 
           <button
             type="button"
@@ -73,6 +75,7 @@ export const Header = () => {
               ))}
             </nav>
             <SearchBar className="max-w-none" onAction={closeMobileMenu} />
+            <AuthButton className="mt-4" />
           </div>
         )}
       </Container>

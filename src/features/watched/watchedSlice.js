@@ -6,6 +6,7 @@ const watchedSlice = createSlice({
   name: "watched",
   initialState,
   reducers: {
+    clearWatched: () => initialState,
     toggleWatched: (state, action) => {
       const mediaId = String(action.payload);
       if (state.byMediaId[mediaId]) {
@@ -48,6 +49,7 @@ const watchedSlice = createSlice({
 });
 
 export const {
+  clearWatched,
   toggleWatched,
   toggleEpisodeWatched,
   setEpisodesWatched,

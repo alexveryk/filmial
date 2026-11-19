@@ -6,6 +6,7 @@ const favoritesSlice = createSlice({
   name: "favorites",
   initialState,
   reducers: {
+    clearFavorites: () => initialState,
     toggleFavorite: (state, action) => {
       const mediaId = String(action.payload);
       if (state.byMediaId[mediaId]) {
@@ -17,7 +18,7 @@ const favoritesSlice = createSlice({
   },
 });
 
-export const { toggleFavorite } = favoritesSlice.actions;
+export const { clearFavorites, toggleFavorite } = favoritesSlice.actions;
 export const selectIsFavorite = (state, mediaId) =>
   Boolean(state.favorites.byMediaId[mediaId]);
 export default favoritesSlice.reducer;

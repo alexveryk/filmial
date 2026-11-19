@@ -11,6 +11,7 @@ const customListsSlice = createSlice({
   name: "customLists",
   initialState,
   reducers: {
+    clearCustomLists: () => initialState,
     toggleCustomList: (state, action) => {
       const { mediaId: rawMediaId, listId } = action.payload;
       if (!supportedListIds.includes(Number(listId)) &&
@@ -43,7 +44,11 @@ const customListsSlice = createSlice({
   },
 });
 
-export const { toggleCustomList, createCustomList } = customListsSlice.actions;
+export const {
+  clearCustomLists,
+  toggleCustomList,
+  createCustomList,
+} = customListsSlice.actions;
 export const selectCustomListIds = (state, mediaId) =>
   state.customLists.byMediaId[mediaId] || emptyListIds;
 export const selectCustomLists = (state) =>

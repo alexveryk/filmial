@@ -6,6 +6,7 @@ const watchNowSlice = createSlice({
   name: "watchNow",
   initialState,
   reducers: {
+    clearWatchNow: () => initialState,
     toggleWatchNow: (state, action) => {
       const mediaId = String(action.payload);
       if (state.byMediaId[mediaId]) {
@@ -17,7 +18,7 @@ const watchNowSlice = createSlice({
   },
 });
 
-export const { toggleWatchNow } = watchNowSlice.actions;
+export const { clearWatchNow, toggleWatchNow } = watchNowSlice.actions;
 export const selectIsWatchNow = (state, mediaId) =>
   Boolean(state.watchNow.byMediaId[mediaId]);
 export default watchNowSlice.reducer;

@@ -6,6 +6,7 @@ const watchLaterSlice = createSlice({
   name: "watchLater",
   initialState,
   reducers: {
+    clearWatchLater: () => initialState,
     toggleWatchLater: (state, action) => {
       const mediaId = String(action.payload);
       if (state.byMediaId[mediaId]) {
@@ -17,7 +18,7 @@ const watchLaterSlice = createSlice({
   },
 });
 
-export const { toggleWatchLater } = watchLaterSlice.actions;
+export const { clearWatchLater, toggleWatchLater } = watchLaterSlice.actions;
 export const selectIsWatchLater = (state, mediaId) =>
   Boolean(state.watchLater.byMediaId[mediaId]);
 export default watchLaterSlice.reducer;

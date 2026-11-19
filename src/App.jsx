@@ -5,6 +5,7 @@ import { Movies } from "./components/page/Movies/Movies";
 import { Serials } from "./components/page/Serials/Serials";
 import { MediaDetails } from "./components/MediaDetails/MediaDetails";
 import { SearchResults } from "./components/SearchResults/SearchResults";
+import { Profile } from "./components/page/Profile/Profile";
 
 export const App = () => {
   return (
@@ -19,6 +20,7 @@ export const App = () => {
             <Route path="/serials/:id" element={<MediaDetails />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/search/:id" element={<MediaDetails />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </section>
       </Layout>
