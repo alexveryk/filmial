@@ -51,7 +51,7 @@ const clearSignedInMedia = (dispatch) => {
   dispatch(clearCustomLists());
 };
 
-export const AuthButton = ({ className = "" }) => {
+export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const status = useSelector(selectAuthStatus);
@@ -281,7 +281,11 @@ export const AuthButton = ({ className = "" }) => {
         <button
           type="button"
           onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-700/90 bg-slate-900/80 px-2 pr-3 text-left shadow-lg shadow-black/10 transition-colors hover:border-blue-400/40 hover:bg-slate-800/90"
+          className={`inline-flex h-11 items-center gap-2 border border-slate-700/90 bg-slate-900/80 px-2 pr-3 text-left shadow-lg shadow-black/10 transition-colors hover:border-blue-400/40 hover:bg-slate-800/90 ${
+            isMobile
+              ? "w-full rounded-xl"
+              : "rounded-full"
+          }`}
           aria-expanded={isMenuOpen}
           aria-haspopup="menu">
           {profile?.photoURL ? (
@@ -295,21 +299,27 @@ export const AuthButton = ({ className = "" }) => {
               {displayName.charAt(0).toUpperCase()}
             </span>
           )}
-          <span className="hidden max-w-28 truncate text-sm font-semibold text-slate-100 xl:block">
+          <span className={`truncate text-sm font-semibold text-slate-100 ${
+            isMobile ? "block max-w-[220px]" : "hidden max-w-28 xl:block"
+          }`}>
             {displayName}
           </span>
           <ChevronDown
             size={15}
             className={`shrink-0 text-slate-400 transition-transform ${
               isMenuOpen ? "rotate-180" : ""
-            }`}
+            } ${isMobile ? "ml-auto" : ""}`}
           />
         </button>
 
         {isMenuOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-[calc(100%+10px)] z-50 w-72 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/50">
+            className={`z-50 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/50 ${
+              isMobile
+                ? "relative mt-2 w-full"
+                : "absolute right-0 top-[calc(100%+10px)] w-72"
+            }`}>
             <div className="mb-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
               {profile?.photoURL ? (
                 <img
@@ -336,7 +346,10 @@ export const AuthButton = ({ className = "" }) => {
             <Link
               to="/profile"
               role="menuitem"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => {
+                setIsMenuOpen(false);
+                onAction?.();
+              }}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800 hover:text-blue-300">
               <UserRound size={18} className="text-blue-400" />
               Профіль

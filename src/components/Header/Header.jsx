@@ -61,21 +61,27 @@ export const Header = () => {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="border-t border-slate-800 py-4 md:hidden">
-            <nav aria-label="Мобільна навігація" className="mb-4 grid gap-1">
-              {links.map(({ to, label, end }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={end}
-                  onClick={closeMobileMenu}
-                  className={navLinkClass}>
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
-            <SearchBar className="max-w-none" onAction={closeMobileMenu} />
-            <AuthButton className="mt-4" />
+          <div className="absolute inset-x-0 top-full max-h-[calc(100vh-72px)] overflow-y-auto border-b border-slate-800 bg-slate-950 px-4 py-4 shadow-2xl shadow-black/40 md:hidden">
+            <div className="mx-auto w-full max-w-screen-xl sm:px-2">
+              <nav aria-label="Мобільна навігація" className="mb-4 grid gap-1">
+                {links.map(({ to, label, end }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={end}
+                    onClick={closeMobileMenu}
+                    className={navLinkClass}>
+                    {label}
+                  </NavLink>
+                ))}
+              </nav>
+              <SearchBar className="max-w-none" onAction={closeMobileMenu} />
+              <AuthButton
+                className="mt-4"
+                isMobile
+                onAction={closeMobileMenu}
+              />
+            </div>
           </div>
         )}
       </Container>
