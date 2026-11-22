@@ -44,6 +44,7 @@ import {
   useGetMediaDetailsQuery,
   useGetMediaCreditsQuery,
   useGetMediaVideosQuery,
+  useGetMovieWatchProvidersQuery,
   useGetSeasonDetailsQuery,
   useGetSeriesSeasonsQuery,
 } from "../../services/tmdbApi";
@@ -152,6 +153,13 @@ export const MediaDetails = () => {
       { skip: !mediaDetails || trailerMediaType === "unknown" },
     );
   const {
+    data: watchProvidersData,
+    isLoading: isWatchProvidersLoading,
+    isError: isWatchProvidersError,
+  } = useGetMovieWatchProvidersQuery(id, {
+    skip: !mediaDetails || mediaDetails.media_type !== "movie",
+  });
+  const {
     data: creditsData,
     isLoading: isCreditsLoading,
   } = useGetMediaCreditsQuery(
@@ -183,6 +191,18 @@ export const MediaDetails = () => {
   const releaseDate =
     mediaDetails?.release_date || mediaDetails?.first_air_date || "";
   const mediaIsReleased = isReleased(releaseDate);
+  const ukrainianWatchProviders = watchProvidersData?.results?.UA;
+  const watchProviders = [
+    ...(ukrainianWatchProviders?.flatrate || []),
+    ...(ukrainianWatchProviders?.free || []),
+    ...(ukrainianWatchProviders?.ads || []),
+    ...(ukrainianWatchProviders?.rent || []),
+    ...(ukrainianWatchProviders?.buy || []),
+  ].filter(
+    (provider, index, providers) =>
+      providers.findIndex((item) => item.provider_id === provider.provider_id) ===
+      index,
+  );
 
   useEffect(() => {
     setIsTrailerOpen(false);
@@ -485,6 +505,63 @@ export const MediaDetails = () => {
                   "Опис для цього фільму поки відсутній."}
               </p>
             </div>
+
+            {mediaDetails.media_type === "movie" && (
+              <section className="mt-6" aria-labelledby="watch-providers-heading">
+                <h2
+                  id="watch-providers-heading"
+                  className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                  Де дивитися в Україні
+                </h2>
+                {isWatchProvidersLoading ? (
+                  <p className="text-sm text-slate-400" role="status">
+                    Завантажуємо платформи...
+                  </p>
+                ) : isWatchProvidersError ? (
+                  <p className="text-sm text-slate-400">
+                    Не вдалося завантажити інформацію про платформи.
+                  </p>
+                ) : watchProviders.length ? (
+                  <div className="flex flex-wrap gap-3">
+                    {watchProviders.map((provider) => {
+                      const content = (
+                        <>
+                          {provider.logo_path && (
+                            <img
+                              className="h-8 w-8 rounded-lg"
+                              src={`${imageBaseUrl}/w92${provider.logo_path}`}
+                              alt=""
+                            />
+                          )}
+                          <span>{provider.provider_name}</span>
+                        </>
+                      );
+
+                      return ukrainianWatchProviders.link ? (
+                        <a
+                          key={provider.provider_id}
+                          href={ukrainianWatchProviders.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 transition-colors hover:border-blue-400/50 hover:text-white">
+                          {content}
+                        </a>
+                      ) : (
+                        <span
+                          key={provider.provider_id}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-200">
+                          {content}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400">
+                    Інформація про онлайн-перегляд в Україні недоступна.
+                  </p>
+                )}
+              </section>
+            )}
 
             <div className="relative mt-8 flex flex-wrap items-center gap-3">
               <button

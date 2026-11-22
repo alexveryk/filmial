@@ -111,6 +111,11 @@ export const tmdbApi = createApi({
         }),
       }),
     }),
+    getMovieWatchProviders: builder.query({
+      query: (id) => ({
+        url: `movie/${id}/watch/providers`,
+      }),
+    }),
     getMediaCredits: builder.query({
       query: ({ id, mediaType }) => ({
         url: `${mediaType}/${id}/${mediaType === "tv" ? "aggregate_credits" : "credits"}`,
@@ -155,6 +160,7 @@ export const {
   useSearchMultiQuery,
   useGetMediaDetailsQuery,
   useGetMediaVideosQuery,
+  useGetMovieWatchProvidersQuery,
   useGetMediaCreditsQuery,
   useGetSeasonDetailsQuery,
   useGetSeriesSeasonsQuery,
