@@ -48,7 +48,7 @@ export const Header = () => {
           </nav>
 
           <SearchBar className="ml-auto hidden md:block" />
-          <AuthButton className="hidden md:block" />
+          <AuthButton className="hidden md:inline-flex" />
 
           <button
             type="button"

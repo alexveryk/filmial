@@ -33,12 +33,15 @@ const tabs = [
 ];
 
 const ProfileMediaCard = ({ mediaId }) => {
-  const { data, isLoading, isError } = useGetMediaDetailsQuery({
-    id: mediaId,
-    mediaType: "unknown",
-  }, {
-    skip: !mediaId,
-  });
+  const { data, isLoading, isError } = useGetMediaDetailsQuery(
+    {
+      id: mediaId,
+      mediaType: "unknown",
+    },
+    {
+      skip: !mediaId,
+    },
+  );
 
   if (isLoading) {
     return (
@@ -56,17 +59,11 @@ const ProfileMediaCard = ({ mediaId }) => {
 
   if (!data) return null;
 
-  const mediaType =
-    data.media_type === "tv"
-      ? "serials"
-      : "movies";
+  const mediaType = data.media_type === "tv" ? "serials" : "movies";
 
   return (
     <li className="min-w-0">
-      <MediaCard
-        items={data}
-        linkTo={`/${mediaType}/${mediaId}`}
-      />
+      <MediaCard items={data} linkTo={`/${mediaType}/${mediaId}`} />
     </li>
   );
 };
@@ -105,8 +102,7 @@ export const Profile = () => {
     return mediaIdsByListId;
   }, [customListMemberships, customLists]);
   const requestedCustomListIdByName = Object.entries(customLists).find(
-    ([, name]) =>
-      name.toLowerCase() === requestedCustomListName.toLowerCase(),
+    ([, name]) => name.toLowerCase() === requestedCustomListName.toLowerCase(),
   )?.[0];
   const activeCustomListId = customLists[requestedCustomListId]
     ? requestedCustomListId
@@ -189,10 +185,12 @@ export const Profile = () => {
     () => ({
       favorites: Object.keys(favorites).filter((id) => Boolean(favorites[id])),
       watched: Object.keys(watched).filter((id) => Boolean(watched[id])),
-      watchLater: Object.keys(watchLater).filter((id) => Boolean(watchLater[id])),
+      watchLater: Object.keys(watchLater).filter((id) =>
+        Boolean(watchLater[id]),
+      ),
       watchNow: Object.keys(watchNow).filter((id) => Boolean(watchNow[id])),
     }),
-    [favorites, watched, watchLater, watchNow]
+    [favorites, watched, watchLater, watchNow],
   );
 
   const activeMediaIds = collections[activeTab] || [];
@@ -246,8 +244,25 @@ export const Profile = () => {
         </div>
       </section>
 
-      <UserConnections />
-      <SharedMovieGroups />
+      <section className="mb-8">
+        <h2 className="mb-4 text-xl font-bold text-white">
+          {tabs.find((tab) => tab.id === activeTab)?.label}
+        </h2>
+        {activeMediaIds.length ? (
+          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 xl:grid-cols-5">
+            {activeMediaIds.map((mediaId) => (
+              <ProfileMediaCard
+                key={`${activeTab}-${mediaId}`}
+                mediaId={mediaId}
+              />
+            ))}
+          </ul>
+        ) : (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-400">
+            У цьому розділі поки нічого немає.
+          </div>
+        )}
+      </section>
 
       <section className="mb-8">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-white">
@@ -295,13 +310,17 @@ export const Profile = () => {
                   <form
                     onSubmit={(event) => handleRenameList(event, id)}
                     className="flex min-w-0 flex-wrap items-center gap-2">
-                    <label htmlFor={`custom-list-name-${id}`} className="sr-only">
+                    <label
+                      htmlFor={`custom-list-name-${id}`}
+                      className="sr-only">
                       Нова назва списку «{name}»
                     </label>
                     <input
                       id={`custom-list-name-${id}`}
                       value={editingListName}
-                      onChange={(event) => setEditingListName(event.target.value)}
+                      onChange={(event) =>
+                        setEditingListName(event.target.value)
+                      }
                       maxLength={40}
                       required
                       autoFocus
@@ -325,7 +344,9 @@ export const Profile = () => {
                       <X size={16} aria-hidden="true" />
                     </button>
                     {editingListError && (
-                      <p className="basis-full text-xs text-rose-300" role="alert">
+                      <p
+                        className="basis-full text-xs text-rose-300"
+                        role="alert">
                         {editingListError}
                       </p>
                     )}
@@ -397,25 +418,8 @@ export const Profile = () => {
         </section>
       )}
 
-      <section>
-        <h2 className="mb-4 text-xl font-bold text-white">
-          {tabs.find((tab) => tab.id === activeTab)?.label}
-        </h2>
-        {activeMediaIds.length ? (
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 xl:grid-cols-5">
-            {activeMediaIds.map((mediaId) => (
-              <ProfileMediaCard
-                key={`${activeTab}-${mediaId}`}
-                mediaId={mediaId}
-              />
-            ))}
-          </ul>
-        ) : (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-400">
-            У цьому розділі поки нічого немає.
-          </div>
-        )}
-      </section>
+      <UserConnections />
+      <SharedMovieGroups />
     </div>
   );
 };
