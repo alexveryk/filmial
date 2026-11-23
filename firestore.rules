@@ -81,6 +81,11 @@ service cloud.firestore {
           || resource.data.toUid == request.auth.uid);
     }
 
+    match /{path=**}/members/{memberUid} {
+      allow get, list: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+
     match /movieGroups/{groupId} {
       allow read: if isMovieGroupMember(groupId);
       allow create: if request.auth != null
@@ -100,8 +105,7 @@ service cloud.firestore {
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 40;
       allow delete: if request.auth != null
-        && resource.data.ownerUid == request.auth.uid
-        && isMovieGroupMember(groupId);
+        && resource.data.ownerUid == request.auth.uid;
 
       match /members/{memberUid} {
         allow get: if request.auth != null

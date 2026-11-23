@@ -43,12 +43,15 @@ usernames and send friend requests; only the recipient can accept a request.
 Public profile documents contain only the username, display name, and photo
 URL. Private media lists remain in `users/{uid}`.
 
-Deploy the Firestore rules after enabling user search, friend requests, and
-shared groups:
+Deploy the Firestore rules and indexes after enabling user search, friend
+requests, and shared groups:
 
 ```sh
 npx firebase-tools deploy --only firestore:filmialnative --project=filmial
 ```
+
+The collection-group index for memberships may take a few minutes to finish
+building before group lists load successfully.
 
 Users can create multiple movie groups, add accepted friends, and choose films
 separately in each group. Group members can see each other's choices and shared

@@ -164,42 +164,39 @@ export const MediaActions = ({ items, variant = "card" }) => {
           : "flex gap-2"
       }`}
     >
-      <button
-        type="button"
-        onClick={mediaIsReleased ? handleToggleWatched : undefined}
-        disabled={!mediaIsReleased}
-        aria-label={
-          watched
-            ? `Прибрати позначку перегляду для «${title}»`
-            : `Позначити «${title}» як переглянутий`
-        }
-        aria-pressed={watched}
-        title={
-          !mediaIsReleased
-            ? "Тайтл ще не вийшов"
-            : watched
-              ? "Вже дивився"
-              : "Позначити як переглянутий"
-        }
-        className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-lg font-semibold transition-colors ${
-          isHero
-            ? "gap-2 rounded-xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-white backdrop-blur hover:bg-slate-800"
-            : "h-9 w-9 rounded-xl border backdrop-blur transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
-        } ${!mediaIsReleased ? "cursor-not-allowed opacity-50" : ""} ${
-          watched
-            ? "border-emerald-400/50 bg-emerald-500/90 text-white hover:bg-emerald-400"
-            : isHero
-              ? ""
-              : "border-white/20 bg-slate-950/70 text-slate-200 hover:border-emerald-400/50 hover:text-emerald-300"
-        }`}
-      >
-        {watched ? (
-          <Check size={isHero ? 17 : 16} aria-hidden="true" />
-        ) : (
-          <span className="text-lg leading-none" aria-hidden="true">○</span>
-        )}
-        {isHero && <span className="whitespace-nowrap">Дивився</span>}
-      </button>
+      {isHero && (
+        <button
+          type="button"
+          onClick={mediaIsReleased ? handleToggleWatched : undefined}
+          disabled={!mediaIsReleased}
+          aria-label={
+            watched
+              ? `Прибрати позначку перегляду для «${title}»`
+              : `Позначити «${title}» як переглянутий`
+          }
+          aria-pressed={watched}
+          title={
+            !mediaIsReleased
+              ? "Тайтл ще не вийшов"
+              : watched
+                ? "Вже дивився"
+                : "Позначити як переглянутий"
+          }
+          className={`inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${
+            !mediaIsReleased ? "cursor-not-allowed opacity-50" : ""
+          } ${
+            watched
+              ? "border-emerald-400/50 bg-emerald-500/90 text-white hover:bg-emerald-400"
+              : ""
+          }`}>
+          {watched ? (
+            <Check size={17} aria-hidden="true" />
+          ) : (
+            <span className="text-lg leading-none" aria-hidden="true">○</span>
+          )}
+          <span className="whitespace-nowrap">Дивився</span>
+        </button>
+      )}
 
       <div className={`relative ${isHero ? "" : "min-w-0"}`}>
         <button
