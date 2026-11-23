@@ -5,5 +5,66 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    match /userProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          'username',
+          'usernameLower',
+          'displayName',
+          'photoURL'
+        ])
+        && request.resource.data.username.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.usernameLower == request.resource.data.username
+        && getAfter(
+          /databases/$(database)/documents/usernames/$(request.resource.data.username)
+        ).data.uid == userId;
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'photoURL']);
+      allow delete: if false;
+    }
+
+    match /usernames/{username} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(
+          /databases/$(database)/documents/userProfiles/$(request.auth.uid)
+        ).data.username == username;
+      allow update, delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow get: if request.auth != null
+        && (resource == null
+          || resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid);
+      allow list: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['fromUid', 'toUid', 'status'])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.status == 'pending'
+        && requestId == request.resource.data.fromUid + '_' + request.resource.data.toUid
+        && !exists(
+          /databases/$(database)/documents/friendRequests/$(request.resource.data.toUid + '_' + request.resource.data.fromUid)
+        );
+      allow update: if request.auth != null
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid);
+    }
   }
 }

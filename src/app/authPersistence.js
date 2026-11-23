@@ -29,6 +29,8 @@ export const loadPersistedAuthState = () => {
           email: typeof profile.email === "string" ? profile.email : null,
           photoURL:
             typeof profile.photoURL === "string" ? profile.photoURL : null,
+          username:
+            typeof profile.username === "string" ? profile.username : null,
         },
       },
     };

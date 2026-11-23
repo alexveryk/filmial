@@ -4,6 +4,7 @@ import { Bookmark, CheckCircle2, Clock3, Heart, ListVideo } from "lucide-react";
 import { selectUserProfile } from "../../../features/user/userSlice";
 import { useGetMediaDetailsQuery } from "../../../services/tmdbApi";
 import { MediaCard } from "../../MediaCard/MediaCard";
+import { UserConnections } from "./UserConnections";
 
 const tabs = [
   { id: "favorites", label: "Обране", icon: Heart },
@@ -93,6 +94,9 @@ export const Profile = () => {
             {profile?.displayName || "Користувач"}
           </h1>
           <p className="mt-1 text-sm text-slate-400">Особистий профіль</p>
+          {profile?.username && (
+            <p className="mt-1 text-sm text-blue-300">@{profile.username}</p>
+          )}
 
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {tabs.map(({ id, label, icon: Icon }) => (
@@ -122,6 +126,8 @@ export const Profile = () => {
           </div>
         </div>
       </section>
+
+      <UserConnections />
 
       {Object.keys(customLists).length > 0 && (
         <section className="mb-8">

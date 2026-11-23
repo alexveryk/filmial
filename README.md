@@ -34,3 +34,19 @@ npx firebase-tools deploy --only firestore:filmialnative --project=filmial
 ```
 
 Enable Google as a Firebase Authentication provider before signing in.
+
+## User search and friends
+
+Users can choose an immutable, unique username (3–20 lowercase Latin letters,
+digits, or underscores) in their profile. Authenticated users can search public
+usernames and send friend requests; only the recipient can accept a request.
+Public profile documents contain only the username, display name, and photo
+URL. Private media lists remain in `users/{uid}`.
+
+Deploy the Firestore rules after enabling user search and friend requests:
+
+```sh
+npx firebase-tools deploy --only firestore:filmialnative --project=filmial
+```
+
+Shared media lists are not part of this release.
