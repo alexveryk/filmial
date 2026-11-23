@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Eye, Heart, Pin, Plus, FolderPlus } from "lucide-react";
+import {
+  Check,
+  Eye,
+  FolderPlus,
+  Heart,
+  Pin,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   selectIsFavorite,
@@ -20,6 +28,7 @@ import {
 } from "../../features/watchNow/watchNowSlice";
 import {
   createCustomList,
+  deleteCustomList,
   selectCustomListIds,
   selectCustomLists,
   toggleCustomList,
@@ -98,8 +107,20 @@ export const MediaActions = ({ items, variant = "card" }) => {
     event.preventDefault();
     const name = newListName.trim();
     if (!name) return;
-    dispatch(createCustomList(name));
+    dispatch(createCustomList({ name, mediaId: items.id }));
     setNewListName("");
+  };
+
+  const handleDeleteCustomList = (list) => {
+    if (
+      !window.confirm(
+        `Видалити список «${list.name}»? Усі фільми буде прибрано саме з цього списку. Цю дію не можна скасувати.`,
+      )
+    ) {
+      return;
+    }
+
+    dispatch(deleteCustomList(list.id));
   };
 
   const toggleMenu = () => {
@@ -322,30 +343,43 @@ export const MediaActions = ({ items, variant = "card" }) => {
               {customLists.map((list) => {
                 const checked = customListIds.includes(list.id);
                 return (
-                  <button
+                  <div
                     key={list.id}
-                    type="button"
-                    role="menuitemcheckbox"
-                    onClick={() =>
-                      dispatch(toggleCustomList({
-                        mediaId: items.id,
-                        listId: list.id,
-                      }))
-                    }
-                    aria-checked={checked}
-                    className="flex w-full items-center justify-between gap-5 rounded-lg px-3 py-2.5 text-sm text-slate-200 transition-colors hover:bg-slate-800 hover:text-white">
-                    <span className="flex items-center gap-2.5">
-                      <FolderPlus size={16} aria-hidden="true" />
-                      {list.name}
-                    </span>
-                    {checked && (
-                      <Check
-                        size={16}
-                        className="ml-3 text-emerald-400"
-                        aria-hidden="true"
-                      />
-                    )}
-                  </button>
+                    role="none"
+                    className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      onClick={() =>
+                        dispatch(toggleCustomList({
+                          mediaId: items.id,
+                          listId: list.id,
+                        }))
+                      }
+                      aria-checked={checked}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-5 rounded-lg px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800 hover:text-white">
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <FolderPlus size={16} aria-hidden="true" />
+                        <span className="truncate">{list.name}</span>
+                      </span>
+                      {checked && (
+                        <Check
+                          size={16}
+                          className="ml-3 text-emerald-400"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => handleDeleteCustomList(list)}
+                      aria-label={`Видалити список «${list.name}»`}
+                      title="Видалити список"
+                      className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-400/10 hover:text-red-300">
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  </div>
                 );
               })}
               <div className="my-1 border-t border-slate-800" />
