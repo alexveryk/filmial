@@ -17,6 +17,8 @@ import {
 } from "firebase/firestore";
 import { requireFirestore } from "./firebase";
 
+const MAX_MEMBER_DELETES_PER_BATCH = 10;
+
 export const loadMovieGroups = async (uid) => {
   const memberQuery = query(
     collectionGroup(requireFirestore(), "members"),
@@ -168,10 +170,14 @@ export const deleteMovieGroup = async (groupId) => {
     (memberDocument) => memberDocument !== ownerMember,
   );
 
-  for (let index = 0; index < membersToDelete.length; index += 450) {
+  for (
+    let index = 0;
+    index < membersToDelete.length;
+    index += MAX_MEMBER_DELETES_PER_BATCH
+  ) {
     const batch = writeBatch(database);
     membersToDelete
-      .slice(index, index + 450)
+      .slice(index, index + MAX_MEMBER_DELETES_PER_BATCH)
       .forEach((memberDocument) => batch.delete(memberDocument.ref));
     await batch.commit();
   }
