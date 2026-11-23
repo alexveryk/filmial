@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { restoreMediaState } from "../../app/mediaPersistence";
 
 const initialState = {
@@ -55,9 +55,11 @@ export const {
 } = customListsSlice.actions;
 export const selectCustomListIds = (state, mediaId) =>
   state.customLists.byMediaId[mediaId] || emptyListIds;
-export const selectCustomLists = (state) =>
-  Object.entries(state.customLists.namesById).map(([id, name]) => ({
+export const selectCustomLists = createSelector(
+  [(state) => state.customLists.namesById],
+  (namesById) => Object.entries(namesById).map(([id, name]) => ({
     id: Number(id),
     name,
-  }));
+  })),
+);
 export default customListsSlice.reducer;
