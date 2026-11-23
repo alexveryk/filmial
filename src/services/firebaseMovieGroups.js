@@ -15,7 +15,7 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { requireFirestore } from "./firebase";
+import { requireFirebaseAuth, requireFirestore } from "./firebase";
 
 const MAX_MEMBER_DELETES_PER_BATCH = 10;
 
@@ -154,20 +154,37 @@ export const removeMovieGroupMember = (groupId, uid) =>
 
 export const deleteMovieGroup = async (groupId) => {
   const database = requireFirestore();
-  const groupSnapshot = await getDoc(doc(database, "movieGroups", groupId));
+  let groupSnapshot;
+  try {
+    groupSnapshot = await getDoc(doc(database, "movieGroups", groupId));
+  } catch (error) {
+    console.error("Не вдалося прочитати групу перед видаленням:", error);
+    throw error;
+  }
   if (!groupSnapshot.exists()) {
     throw new Error("Групу не знайдено.");
   }
   const ownerUid = groupSnapshot.data().ownerUid;
-  const membersSnapshot = await getDocs(
-    collection(database, "movieGroups", groupId, "members"),
-  );
+  const currentUid = requireFirebaseAuth().currentUser?.uid;
+  if (!currentUid || currentUid !== ownerUid) {
+    throw new Error("Активний Firebase-акаунт не є власником цієї групи.");
+  }
+
+  let membersSnapshot;
+  try {
+    membersSnapshot = await getDocs(
+      collection(database, "movieGroups", groupId, "members"),
+    );
+  } catch (error) {
+    console.error("Не вдалося прочитати учасників перед видаленням групи:", error);
+    throw error;
+  }
   const ownerMember = membersSnapshot.docs.find(
     (memberDocument) => memberDocument.id === ownerUid,
   );
   if (!ownerMember) throw new Error("Не знайдено власника групи.");
   const membersToDelete = membersSnapshot.docs.filter(
-    (memberDocument) => memberDocument !== ownerMember,
+    (memberDocument) => memberDocument.id !== ownerUid,
   );
 
   for (
@@ -179,13 +196,23 @@ export const deleteMovieGroup = async (groupId) => {
     membersToDelete
       .slice(index, index + MAX_MEMBER_DELETES_PER_BATCH)
       .forEach((memberDocument) => batch.delete(memberDocument.ref));
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.error("Не вдалося видалити учасників групи:", error);
+      throw error;
+    }
   }
 
   const finalBatch = writeBatch(database);
   finalBatch.delete(ownerMember.ref);
   finalBatch.delete(doc(database, "movieGroups", groupId));
-  await finalBatch.commit();
+  try {
+    await finalBatch.commit();
+  } catch (error) {
+    console.error("Не вдалося видалити групу або її власника:", error);
+    throw error;
+  }
 };
 
 export const toggleMovieGroupPick = (groupId, uid, movie, isSelected) => {

@@ -35,16 +35,18 @@ export const syncPublicProfile = async (uid, identity) => {
   const profileSnapshot = await getDoc(profileRef);
 
   if (!profileSnapshot.exists()) return null;
+  const photoURL =
+    identity.photoURL || profileSnapshot.data().photoURL || null;
 
   await updateDoc(profileRef, {
     displayName: identity.displayName || "Користувач",
-    photoURL: identity.photoURL || null,
+    photoURL,
   });
 
   return {
     ...profileSnapshot.data(),
     displayName: identity.displayName || "Користувач",
-    photoURL: identity.photoURL || null,
+    photoURL,
   };
 };
 

@@ -19,6 +19,7 @@ import {
   subscribeUserMovieGroups,
   toggleMovieGroupPick,
 } from "../../../services/firebaseMovieGroups";
+import { UserAvatar } from "../../UserAvatar/UserAvatar";
 
 const getFriendUid = (request, uid) =>
   request.fromUid === uid ? request.toUid : request.fromUid;
@@ -331,8 +332,17 @@ export const SharedMovieGroups = () => {
     setError("");
     setBusyAction("delete-group");
     try {
-      await deleteMovieGroup(activeGroupId);
-      await refreshGroups();
+      const deletedGroupId = activeGroupId;
+      await deleteMovieGroup(deletedGroupId);
+      const remainingGroups = groups.filter(
+        (group) => group.id !== deletedGroupId,
+      );
+      setGroups(remainingGroups);
+      setActiveGroupId((currentGroupId) =>
+        currentGroupId === deletedGroupId
+          ? remainingGroups[0]?.id || ""
+          : currentGroupId,
+      );
     } catch (deleteError) {
       console.error("Не вдалося видалити групу:", deleteError);
       setError(deleteError.message || "Не вдалося видалити групу.");
@@ -597,19 +607,18 @@ export const SharedMovieGroups = () => {
                     <span
                       key={member.uid}
                       className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-200">
-                      {memberProfile?.photoURL ? (
-                        <img
-                          src={memberProfile.photoURL}
-                          alt=""
-                          className="h-5 w-5 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/30 text-[10px]">
-                          {(memberProfile?.displayName || "?")
-                            .charAt(0)
-                            .toUpperCase()}
-                        </span>
-                      )}
+                      <UserAvatar
+                        photoURL={memberProfile?.photoURL}
+                        fallbackText={(
+                          memberProfile?.displayName ||
+                          memberProfile?.username ||
+                          "?"
+                        )
+                          .charAt(0)
+                          .toUpperCase()}
+                        imageClassName="h-5 w-5 rounded-full object-cover"
+                        fallbackClassName="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/30 text-[10px]"
+                      />
                       {memberProfile?.displayName ||
                         (memberProfile?.username
                           ? `@${memberProfile.username}`

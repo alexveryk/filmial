@@ -4,6 +4,7 @@ import { Bookmark, CheckCircle2, Clock3, Heart, ListVideo } from "lucide-react";
 import { selectUserProfile } from "../../../features/user/userSlice";
 import { useGetMediaDetailsQuery } from "../../../services/tmdbApi";
 import { MediaCard } from "../../MediaCard/MediaCard";
+import { UserAvatar } from "../../UserAvatar/UserAvatar";
 import { UserConnections } from "./UserConnections";
 import { SharedMovieGroups } from "./SharedMovieGroups";
 
@@ -79,17 +80,12 @@ export const Profile = () => {
       <section className="mb-8 overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/80">
         <div className="h-28 bg-gradient-to-r from-slate-950 via-blue-950/40 to-slate-900 sm:h-36" />
         <div className="relative px-5 pb-6 sm:px-8">
-          {profile?.photoURL ? (
-            <img
-              src={profile.photoURL}
-              alt=""
-              className="-mt-12 h-24 w-24 rounded-full border-4 border-slate-900 object-cover shadow-xl"
-            />
-          ) : (
-            <span className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-slate-900 bg-blue-500 text-3xl font-bold text-white shadow-xl">
-              {(profile?.displayName || "К").charAt(0).toUpperCase()}
-            </span>
-          )}
+          <UserAvatar
+            photoURL={profile?.photoURL}
+            fallbackText={(profile?.displayName || "К").charAt(0).toUpperCase()}
+            imageClassName="-mt-12 h-24 w-24 rounded-full border-4 border-slate-900 object-cover shadow-xl"
+            fallbackClassName="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-slate-900 bg-blue-500 text-3xl font-bold text-white shadow-xl"
+          />
 
           <h1 className="mt-4 text-2xl font-bold text-white sm:text-3xl">
             {profile?.displayName || "Користувач"}

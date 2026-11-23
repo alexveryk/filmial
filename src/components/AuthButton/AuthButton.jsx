@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { UserAvatar } from "../UserAvatar/UserAvatar";
 import { store } from "../../app/store";
 import {
   deserializeMediaState,
@@ -288,17 +289,12 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
           }`}
           aria-expanded={isMenuOpen}
           aria-haspopup="menu">
-          {profile?.photoURL ? (
-            <img
-              src={profile.photoURL}
-              alt=""
-              className="h-8 w-8 shrink-0 rounded-full border border-slate-600"
-            />
-          ) : (
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white">
-              {displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
+          <UserAvatar
+            photoURL={profile?.photoURL}
+            fallbackText={displayName.charAt(0).toUpperCase()}
+            imageClassName="h-8 w-8 shrink-0 rounded-full border border-slate-600"
+            fallbackClassName="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white"
+          />
           <span className={`truncate text-sm font-semibold text-slate-100 ${
             isMobile ? "block max-w-[220px]" : "hidden max-w-28 xl:block"
           }`}>
@@ -321,17 +317,12 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
                 : "absolute right-0 top-[calc(100%+10px)] w-72"
             }`}>
             <div className="mb-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-              {profile?.photoURL ? (
-                <img
-                  src={profile.photoURL}
-                  alt=""
-                  className="h-11 w-11 shrink-0 rounded-full border border-slate-600"
-                />
-              ) : (
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-lg font-bold text-white">
-                  {displayName.charAt(0).toUpperCase()}
-                </span>
-              )}
+              <UserAvatar
+                photoURL={profile?.photoURL}
+                fallbackText={displayName.charAt(0).toUpperCase()}
+                imageClassName="h-11 w-11 shrink-0 rounded-full border border-slate-600"
+                fallbackClassName="flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-lg font-bold text-white"
+              />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-white">
                   {displayName}

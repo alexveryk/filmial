@@ -6,6 +6,7 @@ import {
   selectUserProfile,
   setUserProfile,
 } from "../../../features/user/userSlice";
+import { UserAvatar } from "../../UserAvatar/UserAvatar";
 import {
   acceptFriendRequest,
   claimUsername,
@@ -85,7 +86,7 @@ export const UserConnections = () => {
           setUserProfile({
             displayName,
             email,
-            photoURL,
+            photoURL: publicProfile?.photoURL || photoURL || null,
             username: publicProfile?.username || null,
           }),
         );
@@ -437,17 +438,12 @@ export const UserConnections = () => {
 
 const UserSummary = ({ user }) => (
   <div className="flex min-w-0 items-center gap-3">
-    {user?.photoURL ? (
-      <img
-        src={user.photoURL}
-        alt=""
-        className="h-10 w-10 shrink-0 rounded-full object-cover"
-      />
-    ) : (
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-sm font-bold text-blue-200">
-        {(getDisplayName(user) || "?").charAt(0).toUpperCase()}
-      </span>
-    )}
+    <UserAvatar
+      photoURL={user?.photoURL}
+      fallbackText={(getDisplayName(user) || "?").charAt(0).toUpperCase()}
+      imageClassName="h-10 w-10 shrink-0 rounded-full object-cover"
+      fallbackClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-sm font-bold text-blue-200"
+    />
     <span className="min-w-0">
       <span className="block truncate text-sm font-semibold text-white">
         {getDisplayName(user) || "Користувач"}
