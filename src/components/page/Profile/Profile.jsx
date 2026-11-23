@@ -5,6 +5,7 @@ import { selectUserProfile } from "../../../features/user/userSlice";
 import { useGetMediaDetailsQuery } from "../../../services/tmdbApi";
 import { MediaCard } from "../../MediaCard/MediaCard";
 import { UserConnections } from "./UserConnections";
+import { SharedMovieGroups } from "./SharedMovieGroups";
 
 const tabs = [
   { id: "favorites", label: "Обране", icon: Heart },
@@ -128,6 +129,7 @@ export const Profile = () => {
       </section>
 
       <UserConnections />
+      <SharedMovieGroups />
 
       {Object.keys(customLists).length > 0 && (
         <section className="mb-8">
