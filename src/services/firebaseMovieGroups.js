@@ -25,19 +25,23 @@ export const loadMovieGroups = async (uid) => {
     where("uid", "==", uid),
   );
   const memberSnapshot = await getDocs(memberQuery);
-  const groupRefs = memberSnapshot.docs
-    .map((memberDocument) => memberDocument.ref.parent.parent)
-    .filter(Boolean);
+  const memberships = memberSnapshot.docs
+    .map((memberDocument) => ({
+      groupRef: memberDocument.ref.parent.parent,
+      selectedMovies: memberDocument.data().selectedMovies || [],
+    }))
+    .filter((membership) => membership.groupRef);
   const groupSnapshots = await Promise.all(
-    groupRefs.map((groupRef) => getDoc(groupRef)),
+    memberships.map(({ groupRef }) => getDoc(groupRef)),
   );
 
   return groupSnapshots
-    .filter((groupSnapshot) => groupSnapshot.exists())
-    .map((groupSnapshot) => ({
+    .map((groupSnapshot, index) => groupSnapshot.exists() ? ({
       id: groupSnapshot.id,
       ...groupSnapshot.data(),
-    }));
+      selectedMovies: memberships[index].selectedMovies,
+    }) : null)
+    .filter(Boolean);
 };
 
 export const subscribeUserMovieGroups = (uid, onGroups, onError) => {
@@ -59,6 +63,15 @@ export const subscribeUserMovieGroups = (uid, onGroups, onError) => {
             .map((groupRef) => [groupRef.id, groupRef]),
         ).values(),
       ];
+      const selectedMoviesByGroupId = new Map(
+        memberSnapshot.docs
+          .map((memberDocument) => ({
+            groupId: memberDocument.ref.parent.parent?.id,
+            selectedMovies: memberDocument.data().selectedMovies || [],
+          }))
+          .filter((membership) => membership.groupId)
+          .map((membership) => [membership.groupId, membership.selectedMovies]),
+      );
 
       void Promise.all(groupRefs.map((groupRef) => getDoc(groupRef)))
         .then((groupSnapshots) => {
@@ -69,6 +82,8 @@ export const subscribeUserMovieGroups = (uid, onGroups, onError) => {
               .map((groupSnapshot) => ({
                 id: groupSnapshot.id,
                 ...groupSnapshot.data(),
+                selectedMovies:
+                  selectedMoviesByGroupId.get(groupSnapshot.id) || [],
               })),
           );
         })
@@ -218,7 +233,7 @@ export const deleteMovieGroup = async (groupId) => {
 export const toggleMovieGroupPick = (groupId, uid, movie, isSelected) => {
   const selection = {
     mediaId: String(movie.id),
-    title: movie.title,
+    title: movie.title || movie.name || "Без назви",
     posterPath: movie.poster_path || null,
   };
   return updateDoc(

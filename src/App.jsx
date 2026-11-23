@@ -6,24 +6,27 @@ import { Serials } from "./components/page/Serials/Serials";
 import { MediaDetails } from "./components/MediaDetails/MediaDetails";
 import { SearchResults } from "./components/SearchResults/SearchResults";
 import { Profile } from "./components/page/Profile/Profile";
+import { MovieGroupsProvider } from "./app/MovieGroupsProvider";
 
 export const App = () => {
   return (
     <>
-      <Layout>
-        <section>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/movies" element={<Movies />} />
-            <Route path="/movies/:id" element={<MediaDetails />} />
-            <Route path="/serials" element={<Serials />} />
-            <Route path="/serials/:id" element={<MediaDetails />} />
-            <Route path="/search" element={<SearchResults />} />
-            <Route path="/search/:id" element={<MediaDetails />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </section>
-      </Layout>
+      <MovieGroupsProvider>
+        <Layout>
+          <section>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/movies" element={<Movies />} />
+              <Route path="/movies/:id" element={<MediaDetails />} />
+              <Route path="/serials" element={<Serials />} />
+              <Route path="/serials/:id" element={<MediaDetails />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/search/:id" element={<MediaDetails />} />
+              <Route path="/profile" element={<Profile />} />
+            </Routes>
+          </section>
+        </Layout>
+      </MovieGroupsProvider>
     </>
   );
 };

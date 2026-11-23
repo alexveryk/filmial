@@ -24,6 +24,9 @@ import {
   selectCustomLists,
   toggleCustomList,
 } from "../../features/customLists/customListsSlice";
+import { selectAuthUid } from "../../features/auth/authSlice";
+import { useMovieGroups } from "../../app/movieGroupsContext.js";
+import { toggleMovieGroupPick } from "../../services/firebaseMovieGroups";
 
 const isReleased = (item) => {
   const date = item.release_date || item.first_air_date;
@@ -38,11 +41,19 @@ const isReleased = (item) => {
 export const MediaActions = ({ items, variant = "card" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
+  const [busyGroupId, setBusyGroupId] = useState("");
+  const [sharedGroupError, setSharedGroupError] = useState("");
   const menuRef = useRef(null);
   const rootRef = useRef(null);
   const buttonRef = useRef(null);
   const [menuPosition, setMenuPosition] = useState(null);
   const dispatch = useAppDispatch();
+  const uid = useAppSelector(selectAuthUid);
+  const {
+    groups: movieGroups,
+    isLoading: areMovieGroupsLoading,
+    error: movieGroupsError,
+  } = useMovieGroups();
   const title = items.title || items.name || "Без назви";
   const watched = useAppSelector((state) => selectIsWatched(state, items.id));
   const isFavorite = useAppSelector((state) =>
@@ -101,7 +112,7 @@ export const MediaActions = ({ items, variant = "card" }) => {
     const menuWidth = Math.min(280, window.innerWidth - 16);
     const menuHeight = Math.min(
       window.innerHeight - 16,
-      56 + (4 + customLists.length) * 44 + 58,
+      56 + (4 + customLists.length + movieGroups.length) * 44 + 106,
     );
     const top =
       buttonBounds.top >= menuHeight + 8
@@ -121,6 +132,20 @@ export const MediaActions = ({ items, variant = "card" }) => {
       width: menuWidth,
     });
     setIsOpen(true);
+  };
+
+  const handleToggleMovieGroup = async (group, isSelected) => {
+    if (!uid) return;
+    setBusyGroupId(group.id);
+    setSharedGroupError("");
+    try {
+      await toggleMovieGroupPick(group.id, uid, items, isSelected);
+    } catch (pickError) {
+      console.error("Не вдалося оновити спільну добірку:", pickError);
+      setSharedGroupError("Не вдалося оновити спільну добірку. Спробуйте ще раз.");
+    } finally {
+      setBusyGroupId("");
+    }
   };
 
   useEffect(() => {
@@ -323,6 +348,60 @@ export const MediaActions = ({ items, variant = "card" }) => {
                   </button>
                 );
               })}
+              <div className="my-1 border-t border-slate-800" />
+              <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Спільні добірки
+              </p>
+              {areMovieGroupsLoading ? (
+                <p className="px-3 py-2 text-sm text-slate-400" role="status">
+                  Завантажуємо добірки...
+                </p>
+              ) : !uid ? (
+                <p className="px-3 py-2 text-sm text-slate-400">
+                  Увійдіть, щоб додавати фільми до спільних добірок.
+                </p>
+              ) : movieGroups.length ? (
+                movieGroups.map((group) => {
+                  const checked = (group.selectedMovies || []).some(
+                    (movie) => String(movie.mediaId) === String(items.id),
+                  );
+                  const isBusy = busyGroupId === group.id;
+                  return (
+                    <button
+                      key={group.id}
+                      type="button"
+                      role="menuitemcheckbox"
+                      onClick={() => handleToggleMovieGroup(group, checked)}
+                      disabled={Boolean(busyGroupId)}
+                      aria-checked={checked}
+                      className="flex w-full items-center justify-between gap-5 rounded-lg px-3 py-2.5 text-sm text-slate-200 transition-colors hover:bg-slate-800 hover:text-white disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <FolderPlus size={16} aria-hidden="true" />
+                        <span className="truncate">{group.name}</span>
+                      </span>
+                      {isBusy ? (
+                        <span className="text-xs text-slate-400">Зберігаємо...</span>
+                      ) : checked ? (
+                        <Check
+                          size={16}
+                          className="ml-3 text-emerald-400"
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="px-3 py-2 text-sm text-slate-400">
+                  Створіть спільну добірку у профілі.
+                </p>
+              )}
+              {(movieGroupsError || sharedGroupError) && (
+                <p className="px-3 py-2 text-xs text-rose-300" role="alert">
+                  {sharedGroupError || movieGroupsError}
+                </p>
+              )}
               <form
                 onSubmit={handleCreateList}
                 className="mt-1 flex gap-2 border-t border-slate-800 pt-2">
