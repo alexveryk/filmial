@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { UserAvatar } from "../UserAvatar/UserAvatar";
 import { store } from "../../app/store";
 import {
@@ -61,7 +62,6 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
   const processedUidRef = useRef(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -74,13 +74,12 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
 
     let active = true;
     setIsAuthReady(false);
-    setAuthError("");
 
     initializeGoogleAuth(googleClientId, async (response) => {
       if (!active) return;
       if (response.error) {
         console.error("Не вдалося увійти через Google:", response.error);
-        setAuthError(`Google не завершив авторизацію (${response.error}).`);
+        toast.error(`Google не завершив авторизацію (${response.error}).`);
         setIsLoading(false);
         return;
       }
@@ -93,7 +92,7 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
         await signInWithCredential(requireFirebaseAuth(), credential);
       } catch (error) {
         console.error("Не вдалося увійти через Firebase:", error);
-        setAuthError(
+        toast.error(
           error.code === "auth/operation-not-allowed"
             ? "У Firebase не ввімкнено вхід через Google."
             : error.code === "auth/unauthorized-domain"
@@ -111,7 +110,7 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
       .catch((error) => {
         if (!active) return;
         console.error(error.message);
-        setAuthError(error.message);
+        toast.error(error.message);
         setIsLoading(false);
       });
 
@@ -207,7 +206,7 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
       },
       (error) => {
         console.error("Не вдалося перевірити авторизацію Firebase:", error);
-        setAuthError("Не вдалося перевірити вхід у Firebase.");
+        toast.error("Не вдалося перевірити вхід у Firebase.");
         setIsLoading(false);
       }
     );
@@ -244,16 +243,15 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
 
   const handleSignIn = () => {
     if (!tokenClientRef.current) {
-      setAuthError("Google ще підключається. Спробуйте натиснути ще раз.");
+      toast.warning("Google ще підключається. Спробуйте натиснути ще раз.");
       return;
     }
-    setAuthError("");
     setIsLoading(true);
     try {
       tokenClientRef.current.requestAccessToken();
     } catch (error) {
       console.error("Не вдалося відкрити вхід через Google:", error);
-      setAuthError("Не вдалося відкрити вхід через Google. Спробуйте ще раз.");
+      toast.error("Не вдалося відкрити вхід через Google. Спробуйте ще раз.");
       setIsLoading(false);
     }
   };
@@ -385,11 +383,6 @@ export const AuthButton = ({ className = "", isMobile = false, onAction }) => {
               : "Підключення до Google…"}
         </span>
       </button>
-      {authError && (
-        <p role="alert" className="mt-2 max-w-64 text-xs text-red-300">
-          {authError}
-        </p>
-      )}
     </>
   );
 };

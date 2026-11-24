@@ -5,11 +5,11 @@ import { Button } from "../../Button/Button";
 import { incrementPage } from "../../../services/incrementPage";
 import { Spinner } from "../../Spiner/Spiner";
 import { useGetTrendingMoviesQuery } from "../../../services/tmdbApi";
+import { toast } from "sonner";
 
 export const Movies = () => {
   const [movies, setMovies] = useState([]);
   const [page, setPage] = useState(1);
-  const [error, setError] = useState("");
   const {
     currentData,
     isLoading,
@@ -20,12 +20,16 @@ export const Movies = () => {
 
   useEffect(() => {
     if (isError) {
-      setError("Не вдалося завантажити фільми. Спробуйте ще раз.");
+      toast.error("Не вдалося завантажити фільми.", {
+        action: {
+          label: "Спробувати ще",
+          onClick: refetch,
+        },
+      });
       return;
     }
 
     if (!Array.isArray(currentData?.results)) return;
-    setError("");
     setMovies((previousMovies) => {
       const nextItems =
         page === 1
@@ -37,7 +41,7 @@ export const Movies = () => {
           array.findIndex((candidate) => candidate.id === item.id) === index
       );
     });
-  }, [currentData, isError, page]);
+  }, [currentData, isError, page, refetch]);
 
   return (
     <section className="py-8 sm:py-10" aria-labelledby="movies-heading">
@@ -67,21 +71,7 @@ export const Movies = () => {
         <MediaList mediaItems={movies} listType="movies" />
       )}
 
-      {error && (
-        <div
-          className="my-8 flex flex-col items-center gap-4 rounded-2xl border border-rose-400/20 bg-rose-400/5 px-5 py-8 text-center"
-          role="alert"
-        >
-          <p className="text-sm text-slate-300">{error}</p>
-          <Button
-            text="Спробувати ще"
-            variant="secondary"
-            onClick={refetch}
-          />
-        </div>
-      )}
-
-      {!isLoading && !error && movies.length === 0 && (
+      {!isLoading && !isError && movies.length === 0 && (
         <p className="py-12 text-center text-slate-400">
           Фільмів поки немає. Спробуйте оновити сторінку пізніше.
         </p>
@@ -89,7 +79,7 @@ export const Movies = () => {
 
       {isFetching && movies.length > 0 && <Spinner />}
 
-      {!isFetching && !error && movies.length > 0 && (
+      {!isFetching && !isError && movies.length > 0 && (
         <div className="flex justify-center pb-4 pt-2">
           <Button
             text="Завантажити ще"

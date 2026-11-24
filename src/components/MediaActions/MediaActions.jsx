@@ -36,6 +36,7 @@ import {
 import { selectAuthUid } from "../../features/auth/authSlice";
 import { useMovieGroups } from "../../app/movieGroupsContext.js";
 import { toggleMovieGroupPick } from "../../services/firebaseMovieGroups";
+import { toast } from "sonner";
 
 const isReleased = (item) => {
   const date = item.release_date || item.first_air_date;
@@ -51,7 +52,6 @@ export const MediaActions = ({ items, variant = "card" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [busyGroupId, setBusyGroupId] = useState("");
-  const [sharedGroupError, setSharedGroupError] = useState("");
   const menuRef = useRef(null);
   const rootRef = useRef(null);
   const buttonRef = useRef(null);
@@ -61,7 +61,6 @@ export const MediaActions = ({ items, variant = "card" }) => {
   const {
     groups: movieGroups,
     isLoading: areMovieGroupsLoading,
-    error: movieGroupsError,
   } = useMovieGroups();
   const title = items.title || items.name || "Без назви";
   const watched = useAppSelector((state) => selectIsWatched(state, items.id));
@@ -158,12 +157,11 @@ export const MediaActions = ({ items, variant = "card" }) => {
   const handleToggleMovieGroup = async (group, isSelected) => {
     if (!uid) return;
     setBusyGroupId(group.id);
-    setSharedGroupError("");
     try {
       await toggleMovieGroupPick(group.id, uid, items, isSelected);
     } catch (pickError) {
       console.error("Не вдалося оновити спільну добірку:", pickError);
-      setSharedGroupError("Не вдалося оновити спільну добірку. Спробуйте ще раз.");
+      toast.error("Не вдалося оновити спільну добірку. Спробуйте ще раз.");
     } finally {
       setBusyGroupId("");
     }
@@ -429,11 +427,6 @@ export const MediaActions = ({ items, variant = "card" }) => {
               ) : (
                 <p className="px-3 py-2 text-sm text-slate-400">
                   Створіть спільну добірку у профілі.
-                </p>
-              )}
-              {(movieGroupsError || sharedGroupError) && (
-                <p className="px-3 py-2 text-xs text-rose-300" role="alert">
-                  {sharedGroupError || movieGroupsError}
                 </p>
               )}
               <form

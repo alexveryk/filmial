@@ -4,6 +4,7 @@ import { MediaList } from "../MediaList/MediaList";
 import { Button } from "../Button/Button";
 import { Spinner } from "../Spiner/Spiner";
 import { useSearchMultiQuery } from "../../services/tmdbApi";
+import { toast } from "sonner";
 
 export const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -12,16 +13,24 @@ export const SearchResults = () => {
   const [result, setResult] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const { currentData, isLoading, isFetching, isError } = useSearchMultiQuery(
-    { query, page },
-    { skip: !query },
-  );
+  const { currentData, isLoading, isFetching, isError, refetch } =
+    useSearchMultiQuery({ query, page }, { skip: !query });
 
   useEffect(() => {
     setResult([]);
     setPage(1);
     setTotalPages(1);
   }, [query]);
+
+  useEffect(() => {
+    if (!isError) return;
+    toast.error("Не вдалося виконати пошук.", {
+      action: {
+        label: "Спробувати ще",
+        onClick: refetch,
+      },
+    });
+  }, [isError, refetch]);
 
   useEffect(() => {
     if (!currentData?.results) return;
@@ -44,11 +53,7 @@ export const SearchResults = () => {
         <Spinner />
       ) : (
         <div>
-          {isError ? (
-            <p className="py-8 text-center text-rose-300" role="alert">
-              Не вдалося виконати пошук. Спробуйте ще раз.
-            </p>
-          ) : (
+          {!isError && (
             <MediaList mediaItems={result} listType="search" />
           )}
           <div className="flex justify-center mb-4">

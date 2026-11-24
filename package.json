@@ -24,6 +24,7 @@
     "react-slick": "^0.31.0",
     "rsuite": "^5.83.3",
     "slick-carousel": "^1.8.1",
+    "sonner": "^2.0.8",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { MediaList } from "../../MediaList/MediaList";
 import { Button } from "../../Button/Button";
 import { incrementPage } from "../../../services/incrementPage";
@@ -10,6 +11,16 @@ export const Serials = () => {
   const [page, setPage] = useState(1);
   const { currentData, isLoading, isFetching, isError, refetch } =
     useGetPopularSeriesQuery(page);
+
+  useEffect(() => {
+    if (!isError) return;
+    toast.error("Не вдалося завантажити серіали.", {
+      action: {
+        label: "Спробувати ще",
+        onClick: refetch,
+      },
+    });
+  }, [isError, refetch]);
 
   useEffect(() => {
     if (!Array.isArray(currentData?.results)) return;
@@ -32,12 +43,6 @@ export const Serials = () => {
         <Spinner />
       ) : (
         <MediaList mediaItems={tvSeries} listType="serials" />
-      )}
-      {isError && (
-        <div className="py-4 text-center text-sm text-rose-300" role="alert">
-          Не вдалося завантажити серіали.
-          <Button text="Спробувати ще" variant="secondary" onClick={refetch} />
-        </div>
       )}
       {isFetching && tvSeries.length > 0 && <Spinner />}
       <div className="flex justify-center mb-4">

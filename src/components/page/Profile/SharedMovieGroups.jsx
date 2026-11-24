@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { Film, Plus, Search, Trash2, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { selectAuthUid } from "../../../features/auth/authSlice";
 import { useSearchMoviesQuery } from "../../../services/tmdbApi";
 import {
@@ -43,7 +44,6 @@ export const SharedMovieGroups = () => {
   const [isMembersLoading, setIsMembersLoading] = useState(false);
   const [busyAction, setBusyAction] = useState("");
   const [busyMovieId, setBusyMovieId] = useState("");
-  const [error, setError] = useState("");
 
   const {
     data: movieSearchData,
@@ -74,7 +74,6 @@ export const SharedMovieGroups = () => {
     let active = true;
     let unsubscribeGroups = () => {};
     setIsLoading(true);
-    setError("");
 
     void (async () => {
       try {
@@ -120,14 +119,14 @@ export const SharedMovieGroups = () => {
           (groupError) => {
             console.error("Не вдалося оновити список спільних груп:", groupError);
             if (active) {
-              setError("Не вдалося оновити список груп.");
+              toast.error("Не вдалося оновити список груп.");
             }
           },
         );
       } catch (loadError) {
         console.error("Не вдалося завантажити спільні групи:", loadError);
         if (active) {
-          setError("Не вдалося завантажити групи. Спробуйте оновити сторінку.");
+          toast.error("Не вдалося завантажити групи. Спробуйте оновити сторінку.");
         }
       } finally {
         if (active) setIsLoading(false);
@@ -182,7 +181,7 @@ export const SharedMovieGroups = () => {
           .catch((loadError) => {
             console.error("Не вдалося завантажити профілі учасників:", loadError);
             if (active && currentSnapshot === latestSnapshot) {
-              setError("Не вдалося завантажити профілі учасників.");
+              toast.error("Не вдалося завантажити профілі учасників.");
             }
           })
           .finally(() => {
@@ -194,7 +193,7 @@ export const SharedMovieGroups = () => {
       (loadError) => {
         console.error("Не вдалося завантажити склад групи:", loadError);
         if (active) {
-          setError("Не вдалося завантажити склад групи.");
+          toast.error("Не вдалося завантажити склад групи.");
           setIsMembersLoading(false);
         }
       },
@@ -240,9 +239,14 @@ export const SharedMovieGroups = () => {
   }, [activeMembers]);
   const movieResults = (movieSearchData?.results || []).slice(0, 6);
 
+  useEffect(() => {
+    if (isMovieSearchError) {
+      toast.error("Не вдалося знайти фільми.");
+    }
+  }, [isMovieSearchError, movieSearchQuery]);
+
   const handleCreateGroup = async (event) => {
     event.preventDefault();
-    setError("");
     setBusyAction("create");
     try {
       const newGroupId = await createMovieGroup(
@@ -256,7 +260,7 @@ export const SharedMovieGroups = () => {
       setActiveGroupId(newGroupId);
     } catch (createError) {
       console.error("Не вдалося створити групу:", createError);
-      setError(createError.message || "Не вдалося створити групу.");
+      toast.error(createError.message || "Не вдалося створити групу.");
     } finally {
       setBusyAction("");
     }
@@ -264,14 +268,13 @@ export const SharedMovieGroups = () => {
 
   const handleAddFriend = async () => {
     if (!activeGroupId || !friendToAdd) return;
-    setError("");
     setBusyAction("add-member");
     try {
       await addMovieGroupMember(activeGroupId, friendToAdd);
       setFriendToAdd("");
     } catch (addError) {
       console.error("Не вдалося додати друга до групи:", addError);
-      setError(addError.message || "Не вдалося додати друга до групи.");
+      toast.error(addError.message || "Не вдалося додати друга до групи.");
     } finally {
       setBusyAction("");
     }
@@ -282,14 +285,13 @@ export const SharedMovieGroups = () => {
       !activeGroupId ||
       !window.confirm(
         isLeaving
-          ? "Покинути групу та прибрати свої вибрані фільми?"
-          : "Вилучити учасника та його вибрані фільми з групи?",
+          ? "Ви впевнені, що хочете покинути групу? Ваші вибрані фільми також буде прибрано."
+          : "Ви впевнені, що хочете вилучити учасника з групи? Його вибрані фільми також буде прибрано.",
       )
     ) {
       return;
     }
 
-    setError("");
     setBusyAction(`remove:${memberUid}`);
     try {
       await removeMovieGroupMember(activeGroupId, memberUid);
@@ -298,7 +300,7 @@ export const SharedMovieGroups = () => {
       }
     } catch (removeError) {
       console.error("Не вдалося вилучити учасника групи:", removeError);
-      setError(removeError.message || "Не вдалося вилучити учасника.");
+      toast.error(removeError.message || "Не вдалося вилучити учасника.");
     } finally {
       setBusyAction("");
     }
@@ -307,7 +309,6 @@ export const SharedMovieGroups = () => {
   const handleRenameGroup = async (event) => {
     event.preventDefault();
     if (!activeGroupId) return;
-    setError("");
     setBusyAction("rename");
     try {
       await renameMovieGroup(activeGroupId, renameValue);
@@ -315,7 +316,7 @@ export const SharedMovieGroups = () => {
       setRenameValue("");
     } catch (renameError) {
       console.error("Не вдалося перейменувати групу:", renameError);
-      setError(renameError.message || "Не вдалося перейменувати групу.");
+      toast.error(renameError.message || "Не вдалося перейменувати групу.");
     } finally {
       setBusyAction("");
     }
@@ -329,7 +330,6 @@ export const SharedMovieGroups = () => {
       return;
     }
 
-    setError("");
     setBusyAction("delete-group");
     try {
       const deletedGroupId = activeGroupId;
@@ -345,7 +345,7 @@ export const SharedMovieGroups = () => {
       );
     } catch (deleteError) {
       console.error("Не вдалося видалити групу:", deleteError);
-      setError(deleteError.message || "Не вдалося видалити групу.");
+      toast.error(deleteError.message || "Не вдалося видалити групу.");
     } finally {
       setBusyAction("");
     }
@@ -358,13 +358,12 @@ export const SharedMovieGroups = () => {
 
   const handleToggleMovie = async (movie, isSelected) => {
     if (!activeGroupId || !uid || !ownMembership) return;
-    setError("");
     setBusyMovieId(String(movie.id));
     try {
       await toggleMovieGroupPick(activeGroupId, uid, movie, isSelected);
     } catch (pickError) {
       console.error("Не вдалося оновити вибір фільмів:", pickError);
-      setError(pickError.message || "Не вдалося оновити вибір фільму.");
+      toast.error(pickError.message || "Не вдалося оновити вибір фільму.");
     } finally {
       setBusyMovieId("");
     }
@@ -661,12 +660,6 @@ export const SharedMovieGroups = () => {
                 </button>
               </form>
 
-              {isMovieSearchError && (
-                <p className="mt-3 text-sm text-red-300" role="alert">
-                  Не вдалося знайти фільми.
-                </p>
-              )}
-
               {movieResults.length > 0 && (
                 <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                   {movieResults.map((movie) => {
@@ -806,11 +799,6 @@ export const SharedMovieGroups = () => {
         </>
       )}
 
-      {error && (
-        <p className="mt-4 text-sm text-red-300" role="alert">
-          {error}
-        </p>
-      )}
     </section>
   );
 };

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
 import {
   Bookmark,
   CheckCircle2,
@@ -83,10 +84,8 @@ export const Profile = () => {
   const [requestedCustomListId, setRequestedCustomListId] = useState("");
   const [requestedCustomListName, setRequestedCustomListName] = useState("");
   const [newListName, setNewListName] = useState("");
-  const [newListError, setNewListError] = useState("");
   const [editingListId, setEditingListId] = useState("");
   const [editingListName, setEditingListName] = useState("");
-  const [editingListError, setEditingListError] = useState("");
   const customListMediaIdsById = useMemo(() => {
     const mediaIdsByListId = Object.fromEntries(
       Object.keys(customLists).map((id) => [id, []]),
@@ -115,7 +114,6 @@ export const Profile = () => {
     setRequestedCustomListName("");
     setEditingListId(id);
     setEditingListName(name);
-    setEditingListError("");
   };
 
   const handleCreateList = (event) => {
@@ -127,7 +125,7 @@ export const Profile = () => {
       (existingName) => existingName.toLowerCase() === name.toLowerCase(),
     );
     if (duplicateName) {
-      setNewListError("Список із такою назвою вже існує.");
+      toast.warning("Список із такою назвою вже існує.");
       return;
     }
 
@@ -135,7 +133,6 @@ export const Profile = () => {
     setRequestedCustomListId("");
     setRequestedCustomListName(name);
     setNewListName("");
-    setNewListError("");
   };
 
   const handleRenameList = (event, id) => {
@@ -146,14 +143,13 @@ export const Profile = () => {
         existingId !== id && existingName.toLowerCase() === name.toLowerCase(),
     );
     if (duplicateName) {
-      setEditingListError("Список із такою назвою вже існує.");
+      toast.warning("Список із такою назвою вже існує.");
       return;
     }
 
     dispatch(renameCustomList({ id, name }));
     setEditingListId("");
     setEditingListName("");
-    setEditingListError("");
   };
 
   const handleDeleteList = (id, name) => {
@@ -177,7 +173,6 @@ export const Profile = () => {
     if (editingListId === id) {
       setEditingListId("");
       setEditingListName("");
-      setEditingListError("");
     }
   };
 
@@ -278,10 +273,7 @@ export const Profile = () => {
           <input
             id="profile-custom-list-name"
             value={newListName}
-            onChange={(event) => {
-              setNewListName(event.target.value);
-              setNewListError("");
-            }}
+            onChange={(event) => setNewListName(event.target.value)}
             maxLength={40}
             required
             placeholder="Наприклад, На вечір"
@@ -295,11 +287,6 @@ export const Profile = () => {
             Створити список
           </button>
         </form>
-        {newListError && (
-          <p className="mb-3 text-sm text-rose-300" role="alert">
-            {newListError}
-          </p>
-        )}
         {Object.keys(customLists).length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {Object.entries(customLists).map(([id, name]) => (
@@ -337,19 +324,11 @@ export const Profile = () => {
                       type="button"
                       onClick={() => {
                         setEditingListId("");
-                        setEditingListError("");
                       }}
                       aria-label="Скасувати редагування назви"
                       className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
                       <X size={16} aria-hidden="true" />
                     </button>
-                    {editingListError && (
-                      <p
-                        className="basis-full text-xs text-rose-300"
-                        role="alert">
-                        {editingListError}
-                      </p>
-                    )}
                   </form>
                 ) : (
                   <>

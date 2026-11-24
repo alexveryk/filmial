@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { toast } from "sonner";
 import { Check, Search, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { selectAuthUid } from "../../../features/auth/authSlice";
 import {
@@ -40,7 +41,6 @@ export const UserConnections = () => {
   const [isClaimingUsername, setIsClaimingUsername] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [busyUserId, setBusyUserId] = useState(null);
-  const [error, setError] = useState("");
   const [searchError, setSearchError] = useState("");
 
   const refreshFriendData = useCallback(async () => {
@@ -73,7 +73,6 @@ export const UserConnections = () => {
     let active = true;
     setIsProfileLoading(true);
     setIsFriendsLoading(true);
-    setError("");
 
     void (async () => {
       try {
@@ -93,7 +92,7 @@ export const UserConnections = () => {
       } catch (loadError) {
         console.error("Не вдалося завантажити публічний профіль:", loadError);
         if (active) {
-          setError("Не вдалося завантажити профіль. Спробуйте оновити сторінку.");
+          toast.error("Не вдалося завантажити профіль. Спробуйте оновити сторінку.");
         }
       } finally {
         if (active) setIsProfileLoading(false);
@@ -104,7 +103,7 @@ export const UserConnections = () => {
       } catch (loadError) {
         console.error("Не вдалося завантажити список друзів:", loadError);
         if (active) {
-          setError("Не вдалося завантажити список друзів.");
+          toast.error("Не вдалося завантажити список друзів.");
         }
       } finally {
         if (active) setIsFriendsLoading(false);
@@ -147,10 +146,9 @@ export const UserConnections = () => {
 
   const handleClaimUsername = async (event) => {
     event.preventDefault();
-    setError("");
     const username = normalizeUsername(usernameDraft);
     if (!isValidUsername(username)) {
-      setError("Введіть 3–20 символів: латинські літери, цифри або _.");
+      toast.warning("Введіть 3–20 символів: латинські літери, цифри або _.");
       return;
     }
 
@@ -160,7 +158,7 @@ export const UserConnections = () => {
       dispatch(setUserProfile({ ...profile, username: claimedUsername }));
     } catch (claimError) {
       console.error("Не вдалося встановити username:", claimError);
-      setError(claimError.message || "Не вдалося встановити username.");
+      toast.error(claimError.message || "Не вдалося встановити username.");
     } finally {
       setIsClaimingUsername(false);
     }
@@ -171,7 +169,9 @@ export const UserConnections = () => {
     setSearchError("");
     if (normalizeUsername(searchTerm).length < 2) {
       setSearchResults([]);
-      setSearchError("Введіть щонайменше 2 символи для пошуку.");
+      const message = "Введіть щонайменше 2 символи для пошуку.";
+      setSearchError(message);
+      toast.warning(message);
       return;
     }
 
@@ -180,14 +180,15 @@ export const UserConnections = () => {
       setSearchResults(await searchUsersByUsername(searchTerm, uid));
     } catch (searchFailure) {
       console.error("Не вдалося знайти користувачів:", searchFailure);
-      setSearchError("Не вдалося виконати пошук. Спробуйте ще раз.");
+      const message = "Не вдалося виконати пошук. Спробуйте ще раз.";
+      setSearchError(message);
+      toast.error(message);
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleRelationshipAction = async (userId, action, requestId) => {
-    setError("");
     setBusyUserId(userId);
     try {
       if (action === "send") await sendFriendRequest(uid, userId);
@@ -197,7 +198,7 @@ export const UserConnections = () => {
       await refreshFriendData();
     } catch (actionError) {
       console.error("Не вдалося оновити список друзів:", actionError);
-      setError(actionError.message || "Не вдалося оновити список друзів.");
+      toast.error(actionError.message || "Не вдалося оновити список друзів.");
     } finally {
       setBusyUserId(null);
     }
@@ -294,12 +295,6 @@ export const UserConnections = () => {
               {isSearching ? "Шукаємо..." : "Шукати"}
             </button>
           </form>
-
-          {searchError && (
-            <p className="mt-3 text-sm text-amber-300" role="status">
-              {searchError}
-            </p>
-          )}
 
           {searchResults.length > 0 && (
             <ul className="mt-4 divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-950/50">
@@ -427,11 +422,6 @@ export const UserConnections = () => {
         </>
       )}
 
-      {error && (
-        <p className="mt-4 text-sm text-red-300" role="alert">
-          {error}
-        </p>
-      )}
     </section>
   );
 };
