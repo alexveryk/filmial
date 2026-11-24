@@ -503,7 +503,7 @@ export const SharedMovieGroups = () => {
           </div>
 
           {activeGroup && (
-            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/40 p-4 sm:p-5">
+            <div className="mt-4 min-w-0 rounded-2xl border border-slate-800 bg-slate-950/40 p-4 sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-white">
@@ -536,10 +536,10 @@ export const SharedMovieGroups = () => {
               </div>
 
               {isGroupOwner && (
-                <div className="mt-5 grid gap-4 border-t border-slate-800 pt-4 lg:grid-cols-2">
+                <div className="mt-5 grid min-w-0 gap-4 border-t border-slate-800 pt-4 lg:grid-cols-2">
                   <form
                     onSubmit={handleRenameGroup}
-                    className="flex gap-2">
+                    className="flex min-w-0 flex-col gap-2 sm:flex-row">
                     <label htmlFor="rename-movie-group" className="sr-only">
                       Назва групи
                     </label>
@@ -558,7 +558,7 @@ export const SharedMovieGroups = () => {
                     </button>
                   </form>
 
-                  <div className="flex gap-2">
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
                     <label htmlFor="add-group-friend" className="sr-only">
                       Додати друга до групи
                     </label>
