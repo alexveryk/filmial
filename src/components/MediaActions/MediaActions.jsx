@@ -37,6 +37,7 @@ import { selectAuthUid } from "../../features/auth/authSlice";
 import { useMovieGroups } from "../../app/movieGroupsContext.js";
 import { toggleMovieGroupPick } from "../../services/firebaseMovieGroups";
 import { toast } from "sonner";
+import { confirmWithToast } from "../../utils/confirmWithToast";
 
 const isReleased = (item) => {
   const date = item.release_date || item.first_air_date;
@@ -110,12 +111,12 @@ export const MediaActions = ({ items, variant = "card" }) => {
     setNewListName("");
   };
 
-  const handleDeleteCustomList = (list) => {
-    if (
-      !window.confirm(
-        `Видалити список «${list.name}»? Усі фільми буде прибрано саме з цього списку. Цю дію не можна скасувати.`,
-      )
-    ) {
+  const handleDeleteCustomList = async (list) => {
+    const confirmed = await confirmWithToast(
+      `Видалити список «${list.name}»? Усі фільми буде прибрано саме з цього списку. Цю дію не можна скасувати.`,
+      "Видалити",
+    );
+    if (!confirmed) {
       return;
     }
 

@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { Film, Plus, Search, Trash2, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { confirmWithToast } from "../../../utils/confirmWithToast";
 import { selectAuthUid } from "../../../features/auth/authSlice";
 import { useSearchMoviesQuery } from "../../../services/tmdbApi";
 import {
@@ -281,14 +282,15 @@ export const SharedMovieGroups = () => {
   };
 
   const handleRemoveMember = async (memberUid, isLeaving = false) => {
-    if (
-      !activeGroupId ||
-      !window.confirm(
-        isLeaving
-          ? "Ви впевнені, що хочете покинути групу? Ваші вибрані фільми також буде прибрано."
-          : "Ви впевнені, що хочете вилучити учасника з групи? Його вибрані фільми також буде прибрано.",
-      )
-    ) {
+    if (!activeGroupId) return;
+
+    const confirmed = await confirmWithToast(
+      isLeaving
+        ? "Ви впевнені, що хочете покинути групу? Ваші вибрані фільми також буде прибрано."
+        : "Ви впевнені, що хочете вилучити учасника з групи? Його вибрані фільми також буде прибрано.",
+      isLeaving ? "Покинути" : "Вилучити",
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -323,12 +325,12 @@ export const SharedMovieGroups = () => {
   };
 
   const handleDeleteGroup = async () => {
-    if (
-      !activeGroupId ||
-      !window.confirm("Видалити групу разом з усіма виборами учасників?")
-    ) {
-      return;
-    }
+    if (!activeGroupId) return;
+    const confirmed = await confirmWithToast(
+      "Видалити групу разом з усіма виборами учасників?",
+      "Видалити",
+    );
+    if (!confirmed) return;
 
     setBusyAction("delete-group");
     try {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import { confirmWithToast } from "../../../utils/confirmWithToast";
 import {
   Bookmark,
   CheckCircle2,
@@ -152,12 +153,12 @@ export const Profile = () => {
     setEditingListName("");
   };
 
-  const handleDeleteList = (id, name) => {
-    if (
-      !window.confirm(
-        `Видалити список «${name}»? Усі фільми буде прибрано саме з цього списку. Цю дію не можна скасувати.`,
-      )
-    ) {
+  const handleDeleteList = async (id, name) => {
+    const confirmed = await confirmWithToast(
+      `Видалити список «${name}»? Усі фільми буде прибрано саме з цього списку. Цю дію не можна скасувати.`,
+      "Видалити",
+    );
+    if (!confirmed) {
       return;
     }
 
